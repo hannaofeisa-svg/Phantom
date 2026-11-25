@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#09090b">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #09090b; color: #f4f4f5; min-height: 100vh; }
+  .gold { color: #d4af37; }
+  .card { background: #141418; border: 1px solid #27272f; border-radius: 16px; padding: 16px; }
+  .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
+  input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #d4af37; }
+  .table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .t-card { background: #141418; border: 1px solid #27272f; border-radius: 14px; padding: 12px 8px; text-align: center; cursor: pointer; transition: 0.15s; }
+  .t-card.active { border-color: #d4af37; background: #1c1910; box-shadow: 0 0 15px rgba(212,175,55,0.12); }
+</style>
+<title>Phantom Club | الباب وتفعيل الطاولات</title></head><body>
+<div style="max-width:1100px; margin:0 auto; padding:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px; border-bottom:1px solid #27272f; padding-bottom:12px;">
+    <div><h2 class="gold" style="margin:0;">PHANTOM CLUB — كاونتر الباب (السكاشن 1–12)</h2><div style="font-size:13px; color:#a1a1aa;">تفعيل طاولة وتوليد كود دخول للزبون حسب السكشن والويتر المعيّن اليوم</div></div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <select id="sectionFilterSelect" onchange="renderGrid()" style="width:auto; min-width:165px; padding:8px 10px; font-size:13px;"></select>
+      <div id="uaeClock" style="font-weight:700; color:#d4af37; font-size:14px;"></div>
+    </div>
+  </div>
+  <div class="card" id="controlPanel" style="margin-bottom:18px; display:none; border-color:#d4af37;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div><h3 style="margin:0;" class="gold">طاولة رقم <span id="selTableNum"></span> <span id="selTableSectionBadge" style="font-size:13px; color:#38bdf8; font-weight:700;"></span></h3><div style="font-size:13px; color:#a1a1aa;">الحالة الحالية: <span id="selTableStatus"></span></div></div>
+      <div id="activeCodeBox" style="display:none; background:#09090b; border:1px dashed #d4af37; padding:8px 16px; border-radius:12px; text-align:center;">
+        <div style="font-size:11px; color:#a1a1aa;">كود الدخول للزبون</div><div id="selTableCode" style="font-size:24px; font-weight:900; letter-spacing:4px; color:#22c55e;"></div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:14px; align-items:end;">
+      <div><label style="font-size:13px; color:#a1a1aa;">الويتر المسؤول عن الطاولة</label><select id="waiterSelect"></select></div>
+      <button class="btn btn-primary" onclick="activateSelectedTable()">تفعيل الطاولة وتوليد كود</button>
+      <button class="btn btn-dark" onclick="copyGuestLink()">نسخ رابط الزبون</button>
+      <button class="btn btn-danger" onclick="closeSelectedTable()">إغلاق الطاولة</button>
+    </div>
+  </div>
+  <div id="tablesGrid" class="table-grid"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+  const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
+  const db = gun.get(PHANTOM_ROOM);
+  const bc = new BroadcastChannel(PHANTOM_ROOM);
+  const ROSTER_WAITERS = {
+    'W1': { id: 'W1', name: 'Amira', active: true }, 'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true }, 'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true }, 'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true }, 'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true }, 'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true }, 'W12': { id: 'W12', name: 'Karim', active: true }
+  };
+  const ROSTER_SECTIONS = {
+    'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
+    'S02': { id: 'S02', num: 2, name: 'Section 2', tables: [2,3], waiterId: 'W2' },
+    'S03': { id: 'S03', num: 3, name: 'Section 3', tables: [4,5,6], waiterId: 'W3' },
+    'S04': { id: 'S04', num: 4, name: 'Section 4', tables: [11,21,31,41], waiterId: 'W4' },
+    'S05': { id: 'S05', num: 5, name: 'Section 5', tables: [12,22,32,42], waiterId: 'W5' },
+    'S06': { id: 'S06', num: 6, name: 'Section 6', tables: [14,23,33,43], waiterId: 'W6' },
+    'S07': { id: 'S07', num: 7, name: 'Section 7', tables: [15,24,34,44], waiterId: 'W7' },
+    'S08': { id: 'S08', num: 8, name: 'Section 8', tables: [16,25,35,45], waiterId: 'W8' },
+    'S09': { id: 'S09', num: 9, name: 'Section 9', tables: [26,36,46,47], waiterId: 'W9' },
+    'S10': { id: 'S10', num: 10, name: 'Section 10', tables: [91,92,93], waiterId: 'W10' },
+    'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
+    'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
+  };
+  function getAllConfiguredTables() {
+    const set = new Set();
+    Object.values(window.PhantomState.sections || {}).forEach(sec => (sec.tables || []).forEach(t => set.add(Number(t))));
+    return [...set].sort((a,b) => a - b);
+  }
+  window.PhantomState = {
+    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto', adminPin: '0000', waiterPin: '9999' },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)), sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {}, requests: {}, greetings: {}
+  };
+  try {
+    const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
+    if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
+    if (cached.waiters && Object.keys(cached.waiters).length > 0) window.PhantomState.waiters = cached.waiters;
+    if (cached.sections && Object.keys(cached.sections).length > 0) window.PhantomState.sections = cached.sections;
+    if (cached.tables) window.PhantomState.tables = cached.tables;
+    if (cached.requests) window.PhantomState.requests = cached.requests;
+    if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+  } catch(e) {}
+  function saveLocal() { localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState)); bc.postMessage({ type: 'SYNC', state: window.PhantomState }); }
+  bc.onmessage = (ev) => { if (ev.data && ev.data.type === 'SYNC') { window.PhantomState = ev.data.state; if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } };
+  ['settings','waiters','sections','tables','requests','greetings'].forEach(col => {
+    if (col === 'settings') {
+      db.get('settings').on((data) => { if (!data) return; const clean = { ...data }; delete clean._; Object.assign(window.PhantomState.settings, clean); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); });
+    } else {
+      db.get(col).map().on((data, key) => {
+        if (!data) return; const clean = { ...data }; delete clean._;
+        if (col === 'sections' && typeof clean.tables === 'string') { try { clean.tables = JSON.parse(clean.tables); } catch(e) { clean.tables = []; } }
+        window.PhantomState[col][key] = clean; saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      });
+    }
+  });
+  window.PhantomAPI = {
+    getAllTables() { return getAllConfiguredTables(); },
+    getSectionForTable(tableNum) {
+      const num = Number(tableNum);
+      for (const sec of Object.values(window.PhantomState.sections)) {
+        const arr = Array.isArray(sec.tables) ? sec.tables.map(Number) : [];
+        if (arr.includes(num)) return sec;
+      }
+      return null;
+    },
+    getEffectiveWaiterId(tableNum) {
+      const k = String(tableNum); const tObj = window.PhantomState.tables[k];
+      if (tObj && tObj.waiterId) return tObj.waiterId;
+      const sec = this.getSectionForTable(Number(tableNum)); return sec ? sec.waiterId : '';
+    },
+    getTablesForWaiter(waiterId) {
+      const result = [];
+      getAllConfiguredTables().forEach(t => {
+        const k = String(t); const tObj = window.PhantomState.tables[k]; const sec = this.getSectionForTable(t);
+        const effectiveW = (tObj && tObj.waiterId) ? tObj.waiterId : (sec ? sec.waiterId : '');
+        if (effectiveW === waiterId) {
+          result.push({ table: t, sectionId: sec ? sec.id : '', sectionName: sec ? sec.name : '', isTransferred: Boolean(tObj && tObj.waiterId && sec && tObj.waiterId !== sec.waiterId), transferredFrom: (tObj && tObj.transferredFrom) || '', code: (tObj && tObj.status === 'active') ? tObj.code : '', status: (tObj && tObj.status) || 'idle' });
+        }
+      });
+      return result;
+    },
+    setTable(tableNum, obj) {
+      const k = String(tableNum); const sec = this.getSectionForTable(Number(tableNum)); const defaultW = sec ? sec.waiterId : '';
+      const merged = { ...window.PhantomState.tables[k], ...obj, table: k, waiterId: obj.waiterId || defaultW, sectionId: sec ? sec.id : '', updatedAt: Date.now() };
+      window.PhantomState.tables[k] = merged; db.get('tables').get(k).put(merged); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    addRequest(req) { const assignedW = req.waiterId || this.getEffectiveWaiterId(req.table); const fullReq = { ...req, waiterId: assignedW }; window.PhantomState.requests[fullReq.id] = fullReq; db.get('requests').get(fullReq.id).put(fullReq); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
+    updateRequest(id, patch) { if (window.PhantomState.requests[id]) { Object.assign(window.PhantomState.requests[id], patch); db.get('requests').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } },
+    addGreeting(gr) { window.PhantomState.greetings[gr.id] = gr; db.get('greetings').get(gr.id).put(gr); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
+    updateGreeting(id, patch) { if (window.PhantomState.greetings[id]) { Object.assign(window.PhantomState.greetings[id], patch); db.get('greetings').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } },
+    getUAETimeString() { const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000); const uae = new Date(utc + (3600000 * 4)); return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); }
+  };
+  let selectedTable = null;
+  function populateSectionFilter() {
+    const sel = document.getElementById('sectionFilterSelect'); const prev = sel.value || 'ALL';
+    sel.innerHTML = '<option value="ALL">جميع السكاشن (1–12)</option>';
+    Object.values(window.PhantomState.sections).sort((a,b) => Number(a.num) - Number(b.num)).forEach(sec => {
+      const wName = (window.PhantomState.waiters[sec.waiterId] || {}).name || '';
+      sel.innerHTML += `<option value="${sec.id}">${sec.name} (${wName})</option>`;
+    });
+    if (sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+  }
+  function renderGrid() {
+    populateSectionFilter();
+    const filterVal = document.getElementById('sectionFilterSelect').value;
+    const grid = document.getElementById('tablesGrid'); grid.innerHTML = '';
+    const allTables = filterVal === 'ALL'
+      ? window.PhantomAPI.getAllTables()
+      : ((window.PhantomState.sections[filterVal] && window.PhantomState.sections[filterVal].tables) || []).map(Number);
+    allTables.forEach(t => {
+      const k = String(t); const tObj = window.PhantomState.tables[k] || { status: 'idle' };
+      const sec = window.PhantomAPI.getSectionForTable(t); const effWaiterId = window.PhantomAPI.getEffectiveWaiterId(t);
+      const wName = (window.PhantomState.waiters[effWaiterId] || {}).name || '—';
+      const isActive = tObj.status === 'active'; const isSelected = String(selectedTable) === k;
+      grid.innerHTML += `<div class="t-card ${isActive ? 'active' : ''}" style="${isSelected ? 'outline:2px solid #fff;' : ''}" onclick="selectTable(${t})"><div style="font-size:17px; font-weight:900; color:${isActive ? '#d4af37' : '#fff'};">#${t}</div><div style="font-size:11px; color:#38bdf8; font-weight:700;">${sec ? sec.name : ''}</div><div style="font-size:11px; color:#a1a1aa; margin:2px 0;">${isActive ? 'مفعّلة • ' + (tObj.code || '') : 'متاحة'}</div><div style="font-size:12px; font-weight:700; color:${isActive ? '#22c55e' : '#e4e4e7'};">${wName}</div></div>`;
+    });
+    if (selectedTable) renderPanel();
+  }
+  function selectTable(t) { selectedTable = t; document.getElementById('controlPanel').style.display = 'block'; renderPanel(); renderGrid(); }
+  function renderPanel() {
+    const k = String(selectedTable); const tObj = window.PhantomState.tables[k] || { status: 'idle' };
+    const sec = window.PhantomAPI.getSectionForTable(Number(selectedTable)); const effWaiterId = window.PhantomAPI.getEffectiveWaiterId(selectedTable);
+    document.getElementById('selTableNum').innerText = selectedTable;
+    document.getElementById('selTableSectionBadge').innerText = sec ? `• ${sec.name}` : '';
+    document.getElementById('selTableStatus').innerText = tObj.status === 'active' ? 'مفعّلة حالياً' : 'غير مفعّلة';
+    const sel = document.getElementById('waiterSelect'); sel.innerHTML = '';
+    Object.values(window.PhantomState.waiters).filter(w => w.active).forEach(w => { sel.innerHTML += `<option value="${w.id}">${w.name}</option>`; });
+    if (effWaiterId && sel.querySelector(`option[value="${effWaiterId}"]`)) sel.value = effWaiterId;
+    if (tObj.status === 'active' && tObj.code) { document.getElementById('activeCodeBox').style.display = 'block'; document.getElementById('selTableCode').innerText = tObj.code; }
+    else document.getElementById('activeCodeBox').style.display = 'none';
+  }
+  function generateCode() { return String(Math.floor(1000 + Math.random() * 9000)); }
+  function activateSelectedTable() {
+    if (!selectedTable) return; const wId = document.getElementById('waiterSelect').value;
+    const sec = window.PhantomAPI.getSectionForTable(Number(selectedTable));
+    const isManualTransfer = Boolean(sec && wId !== sec.waiterId);
+    const code = (window.PhantomState.tables[String(selectedTable)] && window.PhantomState.tables[String(selectedTable)].status === 'active' && window.PhantomState.tables[String(selectedTable)].code) || generateCode();
+    window.PhantomAPI.setTable(selectedTable, { code, waiterId: wId, manualTransfer: isManualTransfer, transferredFrom: isManualTransfer && sec ? sec.waiterId : '', status: 'active', activatedAt: Date.now() });
+    renderPanel(); renderGrid();
+  }
+  function closeSelectedTable() { if (!selectedTable) return; window.PhantomAPI.setTable(selectedTable, { code: '', status: 'closed', manualTransfer: false, transferredFrom: '' }); renderPanel(); renderGrid(); }
+  function copyGuestLink() {
+    const baseUrl = window.location.href.replace(/door\.html.*$/, 'guest.html');
+    const url = `${baseUrl}?table=${selectedTable}`;
+    navigator.clipboard?.writeText(url).then(() => alert('تم نسخ رابط الزبون: ' + url)).catch(() => prompt('انسخ الرابط:', url));
+  }
+  window.onPhantomUpdate = renderGrid; renderGrid();
+  setInterval(() => { document.getElementById('uaeClock').innerText = window.PhantomAPI.getUAETimeString(); }, 1000);
+</script>
+</body></html>
