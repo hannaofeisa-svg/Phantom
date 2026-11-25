@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#09090b">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #09090b; color: #f4f4f5; min-height: 100vh; }
+  .gold { color: #d4af37; }
+  .card { background: #141418; border: 1px solid #27272f; border-radius: 16px; padding: 16px; }
+  .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
+  input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #d4af37; }
+  .req-card { background: #141418; border: 1px solid #27272f; border-right: 5px solid #ef4444; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .req-card.urgent { animation: pulseBorder 1.2s infinite; }
+  @keyframes pulseBorder { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); } }
+  .my-t-badge { display:inline-block; background:#1c1910; border:1px solid #d4af37; color:#d4af37; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; margin:2px; }
+  .my-t-badge.transferred { background:#0c2230; border-color:#38bdf8; color:#38bdf8; }
+</style>
+<title>Phantom Club | جهاز الويتر</title></head><body>
+<div style="max-width:640px; margin:0 auto; padding:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; border-bottom:1px solid #27272f; padding-bottom:12px;">
+    <div><h2 class="gold" style="margin:0;" id="waiterTitle">جهاز الويتر</h2><div style="font-size:12px; color:#a1a1aa;" id="waiterSectionSubtitle">السكشن وطاولاتي المعيّنة اليوم</div></div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn btn-dark" style="padding:8px 12px; font-size:12px;" onclick="unlockSound()">🔊 الصوت</button>
+      <button class="btn btn-dark" style="padding:8px 12px; font-size:12px;" onclick="openSwitchModal()">تغيير الويتر</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px; padding:12px 14px;"><div style="font-size:12px; color:#a1a1aa; margin-bottom:6px;">طاولاتي اليوم (الذهبي = من السكشن • الأزرق = منقول إليك):</div><div id="myAssignedTablesBox"></div></div>
+  <div id="switchBox" class="card" style="display:none; margin-bottom:14px; border-color:#d4af37;">
+    <label style="font-size:13px; color:#a1a1aa;">اختر اسم الويتر على هذا الجهاز</label>
+    <select id="waiterSelect" style="margin:8px 0;"></select>
+    <input type="password" id="waiterPinInput" placeholder="رمز التغيير (الافتراضي 9999)" style="margin-bottom:10px;">
+    <div style="display:flex; gap:8px;"><button class="btn btn-primary" style="flex:1;" onclick="confirmSwitchWaiter()">حفظ الويتر</button><button class="btn btn-dark" onclick="document.getElementById('switchBox').style.display='none'">إلغاء</button></div>
+  </div>
+  <div id="requestsContainer"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<script>
+  const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
+  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
+  const db = gun.get(PHANTOM_ROOM);
+  const bc = new BroadcastChannel(PHANTOM_ROOM);
+  const ROSTER_WAITERS = {
+    'W1': { id: 'W1', name: 'Amira', active: true }, 'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true }, 'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true }, 'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true }, 'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true }, 'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true }, 'W12': { id: 'W12', name: 'Karim', active: true }
+  };
+  const ROSTER_SECTIONS = {
+    'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
+    'S02': { id: 'S02', num: 2, name: 'Section 2', tables: [2,3], waiterId: 'W2' },
+    'S03': { id: 'S03', num: 3, name: 'Section 3', tables: [4,5,6], waiterId: 'W3' },
+    'S04': { id: 'S04', num: 4, name: 'Section 4', tables: [11,21,31,41], waiterId: 'W4' },
+    'S05': { id: 'S05', num: 5, name: 'Section 5', tables: [12,22,32,42], waiterId: 'W5' },
+    'S06': { id: 'S06', num: 6, name: 'Section 6', tables: [14,23,33,43], waiterId: 'W6' },
+    'S07': { id: 'S07', num: 7, name: 'Section 7', tables: [15,24,34,44], waiterId: 'W7' },
+    'S08': { id: 'S08', num: 8, name: 'Section 8', tables: [16,25,35,45], waiterId: 'W8' },
+    'S09': { id: 'S09', num: 9, name: 'Section 9', tables: [26,36,46,47], waiterId: 'W9' },
+    'S10': { id: 'S10', num: 10, name: 'Section 10', tables: [91,92,93], waiterId: 'W10' },
+    'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
+    'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
+  };
+  function getAllConfiguredTables() {
+    const set = new Set();
+    Object.values(window.PhantomState.sections || {}).forEach(sec => (sec.tables || []).forEach(t => set.add(Number(t))));
+    return [...set].sort((a,b) => a - b);
+  }
+  window.PhantomState = {
+    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto', adminPin: '0000', waiterPin: '9999' },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)), sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {}, requests: {}, greetings: {}
+  };
+  try {
+    const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
+    if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
+    if (cached.waiters && Object.keys(cached.waiters).length > 0) window.PhantomState.waiters = cached.waiters;
+    if (cached.sections && Object.keys(cached.sections).length > 0) window.PhantomState.sections = cached.sections;
+    if (cached.tables) window.PhantomState.tables = cached.tables;
+    if (cached.requests) window.PhantomState.requests = cached.requests;
+    if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+  } catch(e) {}
+  function saveLocal() { localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState)); bc.postMessage({ type: 'SYNC', state: window.PhantomState }); }
+  bc.onmessage = (ev) => { if (ev.data && ev.data.type === 'SYNC') { window.PhantomState = ev.data.state; if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } };
+  ['settings','waiters','sections','tables','requests','greetings'].forEach(col => {
+    if (col === 'settings') {
+      db.get('settings').on((data) => { if (!data) return; const clean = { ...data }; delete clean._; Object.assign(window.PhantomState.settings, clean); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); });
+    } else {
+      db.get(col).map().on((data, key) => {
+        if (!data) return; const clean = { ...data }; delete clean._;
+        if (col === 'sections' && typeof clean.tables === 'string') { try { clean.tables = JSON.parse(clean.tables); } catch(e) { clean.tables = []; } }
+        window.PhantomState[col][key] = clean; saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      });
+    }
+  });
+  window.PhantomAPI = {
+    getSectionForTable(tableNum) {
+      const num = Number(tableNum);
+      for (const sec of Object.values(window.PhantomState.sections)) {
+        const arr = Array.isArray(sec.tables) ? sec.tables.map(Number) : [];
+        if (arr.includes(num)) return sec;
+      }
+      return null;
+    },
+    getEffectiveWaiterId(tableNum) {
+      const k = String(tableNum); const tObj = window.PhantomState.tables[k];
+      if (tObj && tObj.waiterId) return tObj.waiterId;
+      const sec = this.getSectionForTable(Number(tableNum)); return sec ? sec.waiterId : '';
+    },
+    getTablesForWaiter(waiterId) {
+      const result = [];
+      getAllConfiguredTables().forEach(t => {
+        const k = String(t); const tObj = window.PhantomState.tables[k]; const sec = this.getSectionForTable(t);
+        const effectiveW = (tObj && tObj.waiterId) ? tObj.waiterId : (sec ? sec.waiterId : '');
+        if (effectiveW === waiterId) {
+          result.push({ table: t, sectionId: sec ? sec.id : '', sectionName: sec ? sec.name : '', isTransferred: Boolean(tObj && tObj.waiterId && sec && tObj.waiterId !== sec.waiterId), transferredFrom: (tObj && tObj.transferredFrom) || '', code: (tObj && tObj.status === 'active') ? tObj.code : '', status: (tObj && tObj.status) || 'idle' });
+        }
+      });
+      return result;
+    },
+    updateRequest(id, patch) { if (window.PhantomState.requests[id]) { Object.assign(window.PhantomState.requests[id], patch); db.get('requests').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } }
+  };
+  let currentWaiterId = localStorage.getItem('phantom_device_waiter') || 'W1';
+  let audioCtx = null; let knownPendingIds = new Set();
+  function unlockSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); playBeep(); }
+  function playBeep() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.2, audioCtx.currentTime); osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+    } catch(e) {}
+  }
+  function openSwitchModal() {
+    const sel = document.getElementById('waiterSelect'); sel.innerHTML = '';
+    Object.values(window.PhantomState.waiters).filter(w => w.active).forEach(w => { sel.innerHTML += `<option value="${w.id}">${w.name}</option>`; });
+    sel.value = currentWaiterId; document.getElementById('switchBox').style.display = 'block';
+  }
+  function confirmSwitchWaiter() {
+    const pin = document.getElementById('waiterPinInput').value.trim();
+    if (pin !== (window.PhantomState.settings.waiterPin || '9999')) { alert('رمز التغيير غير صحيح'); return; }
+    currentWaiterId = document.getElementById('waiterSelect').value; localStorage.setItem('phantom_device_waiter', currentWaiterId);
+    document.getElementById('waiterPinInput').value = ''; document.getElementById('switchBox').style.display = 'none'; renderWaiter();
+  }
+  function markDone(id) { window.PhantomAPI.updateRequest(id, { status: 'done', doneAt: Date.now() }); }
+  function renderWaiter() {
+    const wObj = window.PhantomState.waiters[currentWaiterId] || { name: currentWaiterId };
+    document.getElementById('waiterTitle').innerText = `الويتر: ${wObj.name}`;
+    const mySecs = Object.values(window.PhantomState.sections).filter(s => s.waiterId === currentWaiterId).map(s => s.name);
+    document.getElementById('waiterSectionSubtitle').innerText = mySecs.length ? `السكشن الأساسي اليوم: ${mySecs.join('، ')}` : 'طاولات منقولة / مخصصة لك اليوم';
+    const assigned = window.PhantomAPI.getTablesForWaiter(currentWaiterId);
+    const tBox = document.getElementById('myAssignedTablesBox');
+    tBox.innerHTML = assigned.length ? assigned.map(item => `<span class="my-t-badge ${item.isTransferred ? 'transferred' : ''}">#${item.table} (${item.sectionName})</span>`).join('') : '<span style="color:#71717a; font-size:12px;">لا توجد طاولات مسندة حالياً</span>';
+    const list = Object.values(window.PhantomState.requests).filter(r => {
+      if (r.status !== 'pending') return false;
+      const effW = window.PhantomAPI.getEffectiveWaiterId(r.table) || r.waiterId;
+      return effW === currentWaiterId;
+    }).sort((a,b) => a.createdAt - b.createdAt);
+    let hasNew = false;
+    list.forEach(r => { if (!knownPendingIds.has(r.id)) { knownPendingIds.add(r.id); hasNew = true; } });
+    if (hasNew) { playBeep(); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); }
+    const container = document.getElementById('requestsContainer'); container.innerHTML = '';
+    if (!list.length) { container.innerHTML = '<div class="card" style="text-align:center; color:#a1a1aa;">لا توجد طلبات معلّقة حالياً 🎉</div>'; return; }
+    const now = Date.now();
+    list.forEach(r => {
+      const secElapsed = Math.floor((now - r.createdAt) / 1000); const isUrgent = secElapsed >= 120;
+      const sec = window.PhantomAPI.getSectionForTable(Number(r.table));
+      container.innerHTML += `<div class="req-card ${isUrgent ? 'urgent' : ''}"><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:20px; font-weight:900; color:#d4af37;">طاولة #${r.table} <span style="font-size:12px; color:#38bdf8;">(${sec ? sec.name : ''})</span></span><span style="font-size:12px; color:${isUrgent ? '#ef4444' : '#a1a1aa'}; font-weight:700;">منذ ${Math.floor(secElapsed/60)}د ${secElapsed%60}ث</span></div><div style="font-size:16px; font-weight:700; margin:8px 0;">${r.type === 'call' ? '🔔 استدعاء إلى الطاولة' : '🍾 ' + r.text}</div><button class="btn btn-success" style="width:100%;" onclick="markDone('${r.id}')">تم التنفيذ ✓</button></div>`;
+    });
+  }
+  window.onPhantomUpdate = renderWaiter; renderWaiter(); setInterval(renderWaiter, 1000);
+</script>
+</body></html>
