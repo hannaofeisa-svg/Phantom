@@ -12,73 +12,67 @@
   body { margin: 0; background: #09090b; color: #f4f4f5; min-height: 100vh; }
   .gold { color: #d4af37; }
   .card { background: #141418; border: 1px solid #27272f; border-radius: 16px; padding: 16px; }
-  .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn { border: none; border-radius: 12px; padding: 10px 14px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
-  .btn-danger { background: #dc2626; color: #fff; }
   .btn-success { background: #16a34a; color: #fff; }
+  .btn-danger { background: #dc2626; color: #fff; }
   .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
-  input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
-  input:focus, select:focus, textarea:focus { border-color: #d4af37; }
-  .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-  .table-chip { display:inline-block; background:#1e1e26; border:1px solid #343442; color:#f4f4f5; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:700; margin:2px; }
-  .table-chip.active-table { border-color:#d4af37; color:#d4af37; background:#241f10; }
-  .table-chip.transferred { border-color:#38bdf8; color:#38bdf8; background:#0c2230; }
+  .open-table-card { background: #0d0d11; border: 1px solid #2e2e38; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .screenshot-frame {
+    width: 100%;
+    max-width: 260px;
+    border-radius: 24px;
+    border: 2px solid #3f3f46;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    cursor: grab;
+    display: block;
+    margin: 0 auto;
+    user-select: none;
+    -webkit-user-drag: element;
+  }
+  .screenshot-frame:active { cursor: grabbing; }
 </style>
-<title>Phantom Club | شاشة التحيات والإضاءة</title>
-<style>
-  .led-stage {
-    background: radial-gradient(circle at center, #1e1b2e 0%, #050507 100%);
-    border: 2px solid #d4af37;
-    border-radius: 20px;
-    min-height: 340px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 32px;
-    box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
-    position: relative;
-  }
-  .led-text {
-    font-size: clamp(28px, 5vw, 64px);
-    font-weight: 900;
-    color: #fff;
-    text-shadow: 0 0 20px #d4af37, 0 0 40px #d4af37;
-    line-height: 1.3;
-  }
-  .fullscreen-mode {
-    position: fixed !important;
-    inset: 0;
-    z-index: 9999;
-    border-radius: 0;
-    border: none;
-    min-height: 100vh;
-  }
-</style>
-</head><body>
-<div style="max-width:1000px; margin:0 auto; padding:16px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+<title>Phantom Club | شاشة التحيات والطاولات المفتوحة</title>
+</head>
+<body>
+<div style="max-width:1040px; margin:0 auto; padding:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #27272f; padding-bottom:12px; margin-bottom:16px;">
     <div>
-      <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والإضاءة</h2>
-      <div style="font-size:13px; color:#a1a1aa;">تستقبل التحيات المعتمدة من الويترية مباشرة</div>
+      <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والطاولات</h2>
+      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة سكرين شوت جاهزة للسحب أو النسخ أو العرض</div>
     </div>
-    <button class="btn btn-primary" onclick="toggleFullScreen()">🖥 وضع الشاشة الكاملة (LED)</button>
+    <button class="btn btn-dark" onclick="toggleOpenedTablesPanel()" id="toggleTablesBtn">🪑 إخفاء / إظهار الطاولات المفتوحة</button>
   </div>
 
-  <div id="ledStage" class="led-stage" style="margin-bottom:20px;">
-    <button id="exitFsBtn" class="btn btn-dark" style="display:none; position:absolute; top:16px; left:16px; opacity:0.6;" onclick="toggleFullScreen()">تصغير</button>
-    <div style="color:#d4af37; font-size:18px; font-weight:700; letter-spacing:4px; margin-bottom:12px;">PHANTOM CLUB ABU DHABI</div>
-    <div id="stageTableBadge" style="background:#d4af37; color:#000; padding:6px 18px; border-radius:999px; font-weight:900; font-size:18px; margin-bottom:18px; display:none;"></div>
-    <div id="stageText" class="led-text">أهلاً بكم في فانتوم كلوب</div>
+  <!-- تنبيهات تأخر التحيات الواردة من الويترية -->
+  <div id="delayAlertsBox" style="display:none; flex-direction:column; gap:8px; margin-bottom:16px;"></div>
+
+  <!-- بطاقة العرض المباشر للصورة على الشاشة -->
+  <div id="liveStage" class="card" style="text-align:center; padding:24px 16px; border:2px solid #d4af37; background:radial-gradient(circle at top, #26200d, #141418); margin-bottom:20px;">
+    <div style="font-size:14px; color:#d4af37; letter-spacing:1px; margin-bottom:10px;">✨ المعاينة المباشرة لصورة التحية (اسحب الصورة لنقلها لأي صفحة) ✨</div>
+    <div id="stageImageHolder" style="min-height:120px; display:flex; align-items:center; justify-content:center;">
+      <div style="color:#a1a1aa; font-size:16px;">بانتظار وصول تحية...</div>
+    </div>
+    <div id="stageActions" style="display:none; margin-top:16px; justify-content:center; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-info" onclick="copyCurrentStageImage()">📋 نسخ الصورة للحافظة</button>
+      <a id="stageDownloadBtn" class="btn btn-primary" download="phantom_greeting.png">⬇️ حفظ الصورة (PNG)</a>
+      <button class="btn btn-dark" onclick="clearStage()">إخفاء من المعاينة</button>
+    </div>
   </div>
 
-  <div class="card">
-    <h3 style="margin:0 0 12px; color:#d4af37;">التحيات الواردة من الويترية (اضغط لعرضها على الشاشة)</h3>
-    <div id="greetingsQueue" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></div>
+  <!-- الطاولات التي تم فتحها وسعر كل طاولة -->
+  <div id="openedTablesSection" class="card" style="margin-bottom:20px; border-color:#d4af37;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="margin:0; font-size:16px; color:#d4af37;">🪑 الطاولات المفتوحة حالياً وأسعارها (<span id="openedTablesCount">0</span>)</h3>
+      <span style="font-size:12px; color:#a1a1aa;">يُحدّث تلقائياً عند فتح أو إغلاق الطاولات</span>
+    </div>
+    <div id="openedTablesGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:10px;"></div>
   </div>
+
+  <h3 style="margin:0 0 12px; font-size:16px; color:#d4af37;">📸 صور التحيات الواردة (اسحب أي صورة لنقلها لصفحة ثانية)</h3>
+  <div id="greetingsQueue" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:14px;"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -96,73 +90,59 @@
   const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
 
-  const ROSTER_WAITERS = {
-    'W1': { id: 'W1', name: 'Amira', active: true },
-    'W2': { id: 'W2', name: 'Hussen', active: true },
-    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
-    'W4': { id: 'W4', name: 'Vina', active: true },
-    'W5': { id: 'W5', name: 'Nada', active: true },
-    'W6': { id: 'W6', name: 'Samara', active: true },
-    'W7': { id: 'W7', name: 'Adel', active: true },
-    'W8': { id: 'W8', name: 'Makdeis', active: true },
-    'W9': { id: 'W9', name: 'Haidar', active: true },
-    'W10': { id: 'W10', name: 'Rita', active: true },
-    'W11': { id: 'W11', name: 'Somar', active: true },
-    'W12': { id: 'W12', name: 'Karim', active: true }
-  };
-  const ROSTER_SECTIONS = {
-    'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
-    'S02': { id: 'S02', num: 2, name: 'Section 2', tables: [2,3], waiterId: 'W2' },
-    'S03': { id: 'S03', num: 3, name: 'Section 3', tables: [4,5,6], waiterId: 'W3' },
-    'S04': { id: 'S04', num: 4, name: 'Section 4', tables: [11,21,31,41], waiterId: 'W4' },
-    'S05': { id: 'S05', num: 5, name: 'Section 5', tables: [12,22,32,42], waiterId: 'W5' },
-    'S06': { id: 'S06', num: 6, name: 'Section 6', tables: [14,23,33,43], waiterId: 'W6' },
-    'S07': { id: 'S07', num: 7, name: 'Section 7', tables: [15,24,34,44], waiterId: 'W7' },
-    'S08': { id: 'S08', num: 8, name: 'Section 8', tables: [16,25,35,45], waiterId: 'W8' },
-    'S09': { id: 'S09', num: 9, name: 'Section 9', tables: [26,36,46,47], waiterId: 'W9' },
-    'S10': { id: 'S10', num: 10, name: 'Section 10', tables: [91,92,93], waiterId: 'W10' },
-    'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
-    'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
-  };
+  function getUAEDateObj() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 4));
+  }
 
-  function getAllConfiguredTables() {
-    const set = new Set();
-    Object.values(window.PhantomState.sections || {}).forEach(sec => {
-      (sec.tables || []).forEach(t => set.add(Number(t)));
-    });
-    return [...set].sort((a,b) => a - b);
+  function getCurrentNightKey() {
+    const uae = getUAEDateObj();
+    const mins = uae.getHours() * 60 + uae.getMinutes();
+    const shift = new Date(uae.getTime());
+    if (mins < 210) shift.setDate(shift.getDate() - 1);
+    const y = shift.getFullYear();
+    const m = String(shift.getMonth() + 1).padStart(2, '0');
+    const d = String(shift.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function isTableSessionActive(tObj) {
+    if (!tObj || tObj.status !== 'active' || !tObj.code) return false;
+    const currentNight = getCurrentNightKey();
+    if (tObj.nightKey && tObj.nightKey !== currentNight) return false;
+    const uae = getUAEDateObj();
+    const mins = uae.getHours() * 60 + uae.getMinutes();
+    const cutoffMins = 3 * 60 + 20;
+    const openMins = 23 * 60 + 30;
+    if (mins >= cutoffMins && mins < openMins) return false;
+    return true;
   }
 
   window.PhantomState = {
-    settings: {
-      openHour: 23, openMin: 30,
-      closeHour: 3, closeMin: 20,
-      forceMode: 'auto',
-      adminPin: '0000',
-      waiterPin: '9999'
-    },
-    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
-    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    settings: { adminPin: '0000', waiterPin: '9999' },
+    waiters: {},
+    sections: {},
     tables: {},
     requests: {},
-    greetings: {}
+    greetings: {},
+    screenAlerts: {}
   };
 
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
     if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
-    if (cached.waiters && Object.keys(cached.waiters).length > 0) window.PhantomState.waiters = cached.waiters;
-    if (cached.sections && Object.keys(cached.sections).length > 0) window.PhantomState.sections = cached.sections;
+    if (cached.waiters) window.PhantomState.waiters = cached.waiters;
+    if (cached.sections) window.PhantomState.sections = cached.sections;
     if (cached.tables) window.PhantomState.tables = cached.tables;
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+    if (cached.screenAlerts) window.PhantomState.screenAlerts = cached.screenAlerts;
   } catch(e) {}
 
   function saveLocal(broadcast = true) {
     localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
-    if (broadcast) {
-      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
-    }
+    if (broadcast) bc.postMessage({ type: 'SYNC', state: window.PhantomState });
   }
 
   function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
@@ -178,31 +158,37 @@
     const remote = snap.val();
     if (!remote || typeof remote !== 'object') return;
     if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
-    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
-    if (remote.sections && Object.keys(remote.sections).length > 0) {
-      const normalized = {};
-      Object.entries(remote.sections).forEach(([k, sec]) => {
-        if (!sec) return;
-        let tbls = sec.tables;
-        if (typeof tbls === 'string') {
-          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
-        }
-        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
-      });
-      window.PhantomState.sections = normalized;
-    }
+    if (remote.waiters) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections) window.PhantomState.sections = remote.sections;
     window.PhantomState.tables = remote.tables || {};
     window.PhantomState.requests = remote.requests || {};
     window.PhantomState.greetings = remote.greetings || {};
+    window.PhantomState.screenAlerts = remote.screenAlerts || {};
     saveLocal(false);
     if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
 
   window.PhantomAPI = {
+    getSectionForTable(tableNum) {
+      const num = Number(tableNum);
+      for (const sec of Object.values(window.PhantomState.sections || {})) {
+        const arr = Array.isArray(sec.tables) ? sec.tables.map(Number) : [];
+        if (arr.includes(num)) return sec;
+      }
+      return null;
+    },
     updateGreeting(id, patch) {
       if (window.PhantomState.greetings[id]) {
         Object.assign(window.PhantomState.greetings[id], patch);
         fbPatchItem('greetings', id, patch);
+        saveLocal(true);
+        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      }
+    },
+    dismissScreenAlert(id) {
+      if (window.PhantomState.screenAlerts && window.PhantomState.screenAlerts[id]) {
+        window.PhantomState.screenAlerts[id].status = 'dismissed';
+        fbPatchItem('screenAlerts', id, { status: 'dismissed' });
         saveLocal(true);
         if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
       }
@@ -211,56 +197,370 @@
 </script>
 
 <script>
-  let activeGreetingId = null;
+  let currentDisplayedId = null;
+  const screenshotCache = {}; // يخزن DataURL و Blob لكل تحية
 
-  function toggleFullScreen() {
-    const stage = document.getElementById('ledStage');
-    const exitBtn = document.getElementById('exitFsBtn');
-    stage.classList.toggle('fullscreen-mode');
-    exitBtn.style.display = stage.classList.contains('fullscreen-mode') ? 'inline-flex' : 'none';
+  function toggleOpenedTablesPanel() {
+    const el = document.getElementById('openedTablesSection');
+    if (!el) return;
+    el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+  }
+
+  function wrapCanvasText(ctx, text, maxWidth) {
+    const words = String(text || '').split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine ? currentLine + ' ' + word : word;
+      if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  }
+
+  function buildPhoneScreenshotDataUrl(g) {
+    const cacheKey = `${g.id}_${g.table}_${g.text}`;
+    if (screenshotCache[cacheKey]) return screenshotCache[cacheKey];
+
+    // أبعاد لقطة شاشة هاتف (9:16) بدقة عالية
+    const W = 720;
+    const H = 1280;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // خلفية داكنة فاخرة بتدرج ذهبي خفيف
+    const bgGrad = ctx.createRadialGradient(W / 2, H * 0.25, 40, W / 2, H / 2, H * 0.75);
+    bgGrad.addColorStop(0, '#2a210d');
+    bgGrad.addColorStop(0.55, '#111116');
+    bgGrad.addColorStop(1, '#070709');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // شريط الحالة العلوي للهاتف (Status Bar)
+    ctx.fillStyle = '#e4e4e7';
+    ctx.font = '700 22px Cairo, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(g.timeStr || '12:00 AM', 42, 46);
+
+    ctx.textAlign = 'right';
+    ctx.fillText('5G   100% 🔋', W - 42, 46);
+
+    // نوتش / جزيرة علوية للهاتف (Dynamic Island)
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.roundRect((W - 180) / 2, 22, 180, 34, 17);
+    ctx.fill();
+
+    // إطار بطاقة التحية في منتصف الشاشة
+    const cardX = 48;
+    const cardY = 170;
+    const cardW = W - 96;
+    const cardH = H - 320;
+    ctx.fillStyle = 'rgba(20, 20, 26, 0.92)';
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, 36);
+    ctx.fill();
+    ctx.stroke();
+
+    // شعار النادي في أعلى البطاقة
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#d4af37';
+    ctx.font = '900 38px Cairo, sans-serif';
+    ctx.fillText('PHANTOM CLUB', W / 2, cardY + 85);
+
+    ctx.fillStyle = '#a1a1aa';
+    ctx.font = '600 22px Cairo, sans-serif';
+    ctx.fillText('ABU DHABI • VIP GREETING', W / 2, cardY + 125);
+
+    // خط فاصل ذهبي
+    ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 60, cardY + 155);
+    ctx.lineTo(cardX + cardW - 60, cardY + 155);
+    ctx.stroke();
+
+    // شارة رقم الطاولة أو المصدر
+    const rawTable = String(g.table || '').trim();
+    const tableTitle = /^\d+$/.test(rawTable) ? `TABLE #${rawTable} • طاولة` : (rawTable || 'VIP');
+    ctx.fillStyle = '#241f10';
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect((W - 360) / 2, cardY + 190, 360, 62, 31);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '900 30px Cairo, sans-serif';
+    ctx.fillText(tableTitle, W / 2, cardY + 231);
+
+    // نص التحية في وسط الصورة
+    const textLen = String(g.text || '').length;
+    const fontSize = textLen > 90 ? 38 : (textLen > 45 ? 46 : 56);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `900 ${fontSize}px Cairo, sans-serif`;
+    const lines = wrapCanvasText(ctx, g.text, cardW - 80);
+    const lineHeight = fontSize * 1.45;
+    const totalTextH = lines.length * lineHeight;
+    let startY = cardY + 310 + Math.max(0, ((cardH - 420) - totalTextH) / 2) + fontSize;
+
+    lines.forEach(line => {
+      ctx.fillText(line, W / 2, startY);
+      startY += lineHeight;
+    });
+
+    // تذييل البطاقة
+    const sourceText = g.waiterId === 'ADMIN'
+      ? 'ADMINISTRATION'
+      : (g.waiterId === 'DOOR' ? 'RECEPTION' : 'VIP TABLE SERVICE');
+    ctx.fillStyle = '#d4af37';
+    ctx.font = '700 22px Cairo, sans-serif';
+    ctx.fillText(`✨ ${sourceText} ✨`, W / 2, cardY + cardH - 42);
+
+    // شريط السحب السفلي للهاتف (Home Indicator)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect((W - 220) / 2, H - 36, 220, 8, 4);
+    ctx.fill();
+
+    const dataUrl = canvas.toDataURL('image/png');
+    screenshotCache[cacheKey] = dataUrl;
+    return dataUrl;
+  }
+
+  function setupDraggableImage(imgEl, g, dataUrl) {
+    imgEl.draggable = true;
+    imgEl.addEventListener('dragstart', (e) => {
+      if (!e.dataTransfer) return;
+      const filename = `phantom_greeting_table_${g.table || 'vip'}.png`;
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/uri-list', dataUrl);
+      e.dataTransfer.setData('text/plain', `${g.table ? 'Table #' + g.table + ': ' : ''}${g.text}`);
+      try {
+        e.dataTransfer.setData('DownloadURL', `image/png:${filename}:${dataUrl}`);
+      } catch(err) {}
+    });
+  }
+
+  async function copyImageDataUrlToClipboard(dataUrl) {
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      alert('✅ تم نسخ صورة السكرين شوت للحافظة! يمكنك لصقها مباشرة في أي صفحة أو تطبيق.');
+    } catch (err) {
+      alert('تعذر النسخ التلقائي للحافظة في هذا المتصفح — يمكنك سحب الصورة مباشرة أو الضغط على زر حفظ الصورة.');
+    }
+  }
+
+  function copyCurrentStageImage() {
+    const img = document.querySelector('#stageImageHolder img');
+    if (img && img.src) copyImageDataUrlToClipboard(img.src);
   }
 
   function displayOnScreen(id) {
-    const g = window.PhantomState.greetings[id];
+    const g = (window.PhantomState.greetings || {})[id];
     if (!g) return;
-    activeGreetingId = id;
-    document.getElementById('stageTableBadge').style.display = 'inline-block';
-    document.getElementById('stageTableBadge').innerText = 'TABLE #' + g.table;
-    document.getElementById('stageText').innerText = g.text;
-    window.PhantomAPI.updateGreeting(id, { displayed: true });
+    currentDisplayedId = id;
+    const dataUrl = buildPhoneScreenshotDataUrl(g);
+    const holder = document.getElementById('stageImageHolder');
+    holder.innerHTML = '';
+
+    const img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = `Greeting Table ${g.table}`;
+    img.className = 'screenshot-frame';
+    img.style.maxWidth = '300px';
+    setupDraggableImage(img, g, dataUrl);
+    holder.appendChild(img);
+
+    const dlBtn = document.getElementById('stageDownloadBtn');
+    dlBtn.href = dataUrl;
+    dlBtn.download = `phantom_greeting_${g.table || 'vip'}.png`;
+    document.getElementById('stageActions').style.display = 'flex';
+
+    window.PhantomAPI.updateGreeting(id, { status: 'displayed' });
   }
 
-  function clearScreen() {
-    activeGreetingId = null;
-    document.getElementById('stageTableBadge').style.display = 'none';
-    document.getElementById('stageText').innerText = 'أهلاً بكم في فانتوم كلوب';
+  function clearStage() {
+    currentDisplayedId = null;
+    document.getElementById('stageImageHolder').innerHTML = '<div style="color:#a1a1aa; font-size:16px;">بانتظار وصول تحية...</div>';
+    document.getElementById('stageActions').style.display = 'none';
   }
 
   window.onPhantomUpdate = function() {
+    // 0. تنبيهات تأخر التحيات الواردة من الويترية
+    const alertsBox = document.getElementById('delayAlertsBox');
+    if (alertsBox) {
+      const activeAlerts = Object.values(window.PhantomState.screenAlerts || {})
+        .filter(a => a && a.status === 'active')
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      if (activeAlerts.length > 0) {
+        alertsBox.style.display = 'flex';
+        alertsBox.innerHTML = activeAlerts.map(a => `
+          <div style="background:#451a03; border:2px solid #f59e0b; border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div>
+              <div style="font-weight:900; color:#fbbf24; font-size:15px;">⚠️ تنبيه تأخر تحية — طاولة #${a.table} (${a.waiterName || a.waiterId}) • ${a.timeStr || ''}</div>
+              <div style="font-size:14px; color:#fff; margin-top:3px;">${a.greetingText || a.message}</div>
+            </div>
+            <button class="btn btn-danger" style="padding:7px 12px; font-size:12px;" onclick="window.PhantomAPI.dismissScreenAlert('${a.id}')">إغلاق التنبيه</button>
+          </div>
+        `).join('');
+      } else {
+        alertsBox.style.display = 'none';
+        alertsBox.innerHTML = '';
+      }
+    }
+
+    // 1. تحديث قائمة الطاولات المفتوحة وأسعارها
+    const openedGrid = document.getElementById('openedTablesGrid');
+    const countEl = document.getElementById('openedTablesCount');
+    if (openedGrid) {
+      openedGrid.innerHTML = '';
+      const activeTables = Object.values(window.PhantomState.tables || {})
+        .filter(t => isTableSessionActive(t))
+        .sort((a, b) => Number(a.table) - Number(b.table));
+
+      if (countEl) countEl.innerText = activeTables.length;
+
+      if (activeTables.length === 0) {
+        openedGrid.innerHTML = '<div style="color:#71717a; font-size:13px;">لا توجد طاولات مفتوحة حالياً</div>';
+      } else {
+        activeTables.forEach(t => {
+          const sec = window.PhantomAPI.getSectionForTable(Number(t.table));
+          const wName = (window.PhantomState.waiters && window.PhantomState.waiters[t.waiterId])
+            ? window.PhantomState.waiters[t.waiterId].name
+            : (t.waiterId || '---');
+          const priceNum = Number(t.tablePrice) || 0;
+          const priceDisplay = priceNum > 0 ? `${priceNum} AED` : 'غير محدد';
+
+          openedGrid.innerHTML += `
+            <div class="open-table-card">
+              <div>
+                <div style="font-weight:900; color:#d4af37; font-size:15px;">طاولة #${t.table}</div>
+                <div style="font-size:12px; color:#a1a1aa;">${sec ? sec.name : ''} • ويتر: <strong style="color:#e4e4e7;">${wName}</strong></div>
+              </div>
+              <div style="background:#241f10; border:1px solid #d4af37; color:#4ade80; padding:5px 10px; border-radius:10px; font-weight:900; font-size:13px; white-space:nowrap;">
+                ${priceDisplay}
+              </div>
+            </div>`;
+        });
+      }
+    }
+
+    // 2. تحديث قائمة التحيات الواردة كصور سكرين شوت قابلة للسحب والنسخ والتحميل
     const q = document.getElementById('greetingsQueue');
     q.innerHTML = '';
-    const list = Object.values(window.PhantomState.greetings).sort((a,b) => b.createdAt - a.createdAt);
+    const list = Object.values(window.PhantomState.greetings || {}).sort((a,b) => b.createdAt - a.createdAt);
+
     if (list.length === 0) {
-      q.innerHTML = '<div style="color:#71717a;">لا توجد تحيات معتمدة بعد</div>';
+      q.innerHTML = '<div class="card" style="text-align:center; color:#71717a; grid-column: 1 / -1;">لا توجد تحيات في الانتظار</div>';
       return;
     }
+
+    // عرض أحدث تحية تلقائياً في المعاينة إن لم يكن هناك تحية محددة
+    if (!currentDisplayedId && list.length > 0) {
+      const latest = list[0];
+      const latestUrl = buildPhoneScreenshotDataUrl(latest);
+      const holder = document.getElementById('stageImageHolder');
+      holder.innerHTML = '';
+      const stageImg = document.createElement('img');
+      stageImg.src = latestUrl;
+      stageImg.className = 'screenshot-frame';
+      stageImg.style.maxWidth = '300px';
+      setupDraggableImage(stageImg, latest, latestUrl);
+      holder.appendChild(stageImg);
+      const dlBtn = document.getElementById('stageDownloadBtn');
+      dlBtn.href = latestUrl;
+      dlBtn.download = `phantom_greeting_${latest.table || 'vip'}.png`;
+      document.getElementById('stageActions').style.display = 'flex';
+    }
+
     list.forEach(g => {
-      const isShowing = activeGreetingId === g.id;
-      q.innerHTML += `
-        <div style="background:#0d0d11; border:1px solid ${isShowing ? '#22c55e' : '#27272f'}; border-radius:12px; padding:14px;">
-          <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
-            <strong class="gold">طاولة #${g.table}</strong>
-            <span style="color:#a1a1aa;">${g.timeStr || ''}</span>
-          </div>
-          <div style="font-size:16px; font-weight:700; margin-bottom:12px;">"${g.text}"</div>
-          <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary" style="flex:1;" onclick="displayOnScreen('${g.id}')">📺 عرض على الشاشة</button>
-            ${isShowing ? `<button class="btn btn-danger" onclick="clearScreen()">إيقاف</button>` : ''}
-          </div>
-        </div>`;
+      const isDisp = g.status === 'displayed' || currentDisplayedId === g.id;
+      const sourceLabel = g.waiterId === 'ADMIN' ? 'من الإدارة' : (g.waiterId === 'DOOR' ? 'من الباب' : 'من الويتر');
+      const tLabel = /^\d+$/.test(String(g.table || '').trim()) ? `طاولة #${g.table}` : `${g.table || 'تحية'}`;
+      const dataUrl = buildPhoneScreenshotDataUrl(g);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.borderColor = isDisp ? '#d4af37' : '#27272f';
+      card.style.display = 'flex';
+      card.style.flexDirection = 'column';
+      card.style.gap = '10px';
+
+      const header = document.createElement('div');
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = 'center';
+      header.innerHTML = `
+        <span style="font-size:13px; color:#d4af37; font-weight:700;">${tLabel} (${sourceLabel})</span>
+        <span style="font-size:11px; color:#a1a1aa;">${g.timeStr || ''}</span>
+      `;
+      card.appendChild(header);
+
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = `${tLabel} - ${g.text}`;
+      img.className = 'screenshot-frame';
+      setupDraggableImage(img, g, dataUrl);
+      card.appendChild(img);
+
+      const dragHint = document.createElement('div');
+      dragHint.style.textAlign = 'center';
+      dragHint.style.fontSize = '11px';
+      dragHint.style.color = '#a1a1aa';
+      dragHint.innerText = '🖱️ اسحب الصورة أعلاه لنقلها مباشرة لأي صفحة ثانية';
+      card.appendChild(dragHint);
+
+      const actions = document.createElement('div');
+      actions.style.display = 'flex';
+      actions.style.gap = '6px';
+      actions.style.flexWrap = 'wrap';
+
+      const showBtn = document.createElement('button');
+      showBtn.className = `btn ${isDisp ? 'btn-success' : 'btn-primary'}`;
+      showBtn.style.flex = '1';
+      showBtn.innerText = isDisp ? '✔ في المعاينة' : 'تكبير';
+      showBtn.onclick = () => displayOnScreen(g.id);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-info';
+      copyBtn.style.flex = '1';
+      copyBtn.innerText = '📋 نسخ الصورة';
+      copyBtn.onclick = () => copyImageDataUrlToClipboard(dataUrl);
+
+      const dlLink = document.createElement('a');
+      dlLink.className = 'btn btn-dark';
+      dlLink.style.flex = '1';
+      dlLink.href = dataUrl;
+      dlLink.download = `phantom_greeting_${g.table || 'vip'}.png`;
+      dlLink.innerText = '⬇️ PNG';
+
+      actions.appendChild(showBtn);
+      actions.appendChild(copyBtn);
+      actions.appendChild(dlLink);
+      card.appendChild(actions);
+
+      q.appendChild(card);
     });
   };
 
   window.onPhantomUpdate();
 </script>
-</body></html>
+</body>
+</html>
