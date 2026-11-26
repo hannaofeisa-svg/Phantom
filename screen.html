@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#09090b">
+<meta name="theme-color" content="#000000">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -23,7 +23,7 @@
   .screenshot-frame {
     width: 100%;
     max-width: 260px;
-    border-radius: 14px;
+    border-radius: 12px;
     border: none;
     box-shadow: none;
     cursor: grab;
@@ -41,7 +41,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #27272f; padding-bottom:12px; margin-bottom:16px;">
     <div>
       <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والطاولات</h2>
-      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة بخلفية سوداء غامقة تحتوي على نص التحية فقط</div>
+      <div style="font-size:13px; color:#a1a1aa;">تصل التحية كصورة بخلفية سوداء داكنة تحتوي على نص التحية فقط</div>
     </div>
     <button class="btn btn-dark" onclick="toggleOpenedTablesPanel()" id="toggleTablesBtn">🪑 إخفاء / إظهار الطاولات المفتوحة</button>
   </div>
@@ -50,7 +50,7 @@
   <div id="delayAlertsBox" style="display:none; flex-direction:column; gap:8px; margin-bottom:16px;"></div>
 
   <!-- بطاقة العرض المباشر للصورة على الشاشة -->
-  <div id="liveStage" class="card" style="text-align:center; padding:24px 16px; border:2px solid #d4af37; background:radial-gradient(circle at top, #26200d, #141418); margin-bottom:20px;">
+  <div id="liveStage" class="card" style="text-align:center; padding:24px 16px; border:2px solid #d4af37; background:#0b0b0e; margin-bottom:20px;">
     <div style="font-size:14px; color:#d4af37; letter-spacing:1px; margin-bottom:10px;">✨ المعاينة المباشرة لصورة التحية (اسحب الصورة لنقلها لأي صفحة) ✨</div>
     <div id="stageImageHolder" style="min-height:120px; display:flex; align-items:center; justify-content:center;">
       <div style="color:#a1a1aa; font-size:16px;">بانتظار وصول تحية...</div>
@@ -231,7 +231,7 @@
   function buildPhoneScreenshotDataUrl(g) {
     const cleanText = String(g.text || '').trim();
     const isAr = isArabicMessage(cleanText);
-    const cacheKey = `${g.id}_${cleanText}_${isAr ? 'ar' : 'en'}`;
+    const cacheKey = `${g.id}_${cleanText}_${isAr ? 'ar' : 'en'}_pitch_dark_v3`;
     if (screenshotCache[cacheKey]) return screenshotCache[cacheKey];
 
     const W = 720;
@@ -241,8 +241,8 @@
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // خلفية سوداء غامقة صافية بدون أي كادر أو عناصر إضافية
-    ctx.fillStyle = '#050507';
+    // خلفية سوداء غامقة داكنة بالكامل بدون أي إطار أو شريط أو نص إضافي
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
 
     ctx.direction = isAr ? 'rtl' : 'ltr';
