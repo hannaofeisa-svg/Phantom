@@ -15,47 +15,94 @@
   .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
+  .btn-danger { background: #dc2626; color: #fff; }
   .btn-success { background: #16a34a; color: #fff; }
+  .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
   input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
   input:focus, select:focus, textarea:focus { border-color: #d4af37; }
-  .req-card { background: #141418; border: 1px solid #27272f; border-right: 5px solid #ef4444; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
-  .req-card.urgent { animation: pulseBorder 1.2s infinite; }
-  @keyframes pulseBorder { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); } }
-  .my-t-badge { display:inline-block; background:#1c1910; border:1px solid #d4af37; color:#d4af37; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; margin:2px; }
-  .my-t-badge.transferred { background:#0c2230; border-color:#38bdf8; color:#38bdf8; }
+  .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .table-chip { display:inline-block; background:#1e1e26; border:1px solid #343442; color:#f4f4f5; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:700; margin:2px; }
+  .table-chip.active-table { border-color:#d4af37; color:#d4af37; background:#241f10; }
+  .table-chip.transferred { border-color:#38bdf8; color:#38bdf8; background:#0c2230; }
 </style>
-<title>Phantom Club | جهاز الويتر</title></head><body>
-<div style="max-width:640px; margin:0 auto; padding:16px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:14px; border-bottom:1px solid #27272f; padding-bottom:12px;">
-    <div><h2 class="gold" style="margin:0;" id="waiterTitle">جهاز الويتر</h2><div style="font-size:12px; color:#a1a1aa;" id="waiterSectionSubtitle">السكشن وطاولاتي المعيّنة اليوم</div></div>
-    <div style="display:flex; gap:6px;">
-      <button class="btn btn-dark" style="padding:8px 12px; font-size:12px;" onclick="unlockSound()">🔊 الصوت</button>
-      <button class="btn btn-dark" style="padding:8px 12px; font-size:12px;" onclick="openSwitchModal()">تغيير الويتر</button>
+<title>Phantom Club | جهاز الويتر</title>
+<style>
+  @keyframes flashDanger {
+    0%, 100% { background-color: #09090b; }
+    50% { background-color: #7f1d1d; }
+  }
+  .danger-alarm-bg { animation: flashDanger 0.6s infinite; }
+</style>
+</head><body id="waiterBody">
+
+<div id="setupScreen" style="max-width:420px; margin:60px auto; padding:16px;">
+  <div class="card" style="text-align:center;">
+    <h2 class="gold" style="margin:0 0 8px;">تخصيص جهاز الويتر</h2>
+    <p style="color:#a1a1aa; font-size:13px; margin-bottom:16px;">اختر الويتر المسؤول عن هذا الجهاز لعرض سكشنه وطاولاته واستقبال الطلبات</p>
+    <select id="deviceWaiterSelect" style="margin-bottom:14px;"></select>
+    <button class="btn btn-primary" style="width:100%;" onclick="lockDeviceToWaiter()">تفعيل وقفل الجهاز</button>
+  </div>
+</div>
+
+<div id="kioskScreen" style="display:none; max-width:560px; margin:0 auto; padding:14px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; background:#141418; padding:12px 16px; border-radius:14px; border:1px solid #27272f; margin-bottom:12px;">
+    <div>
+      <div style="font-size:12px; color:#a1a1aa;">PHANTOM CLUB — جهاز الخدمة</div>
+      <div style="font-size:18px; font-weight:900; color:#d4af37;" id="currentWaiterTitle"></div>
+      <div style="font-size:12px; color:#38bdf8;" id="currentSectionSubtitle"></div>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-dark" style="padding:8px 10px; font-size:12px;" onclick="enableAudio()">🔊 الصوت</button>
+      <button class="btn btn-dark" style="padding:8px 10px; font-size:12px;" onclick="changeWaiterPrompt()">تبديل</button>
     </div>
   </div>
-  <div class="card" style="margin-bottom:14px; padding:12px 14px;"><div style="font-size:12px; color:#a1a1aa; margin-bottom:6px;">طاولاتي اليوم (الذهبي = من السكشن • الأزرق = منقول إليك):</div><div id="myAssignedTablesBox"></div></div>
-  <div id="switchBox" class="card" style="display:none; margin-bottom:14px; border-color:#d4af37;">
-    <label style="font-size:13px; color:#a1a1aa;">اختر اسم الويتر على هذا الجهاز</label>
-    <select id="waiterSelect" style="margin:8px 0;"></select>
-    <input type="password" id="waiterPinInput" placeholder="رمز التغيير (الافتراضي 9999)" style="margin-bottom:10px;">
-    <div style="display:flex; gap:8px;"><button class="btn btn-primary" style="flex:1;" onclick="confirmSwitchWaiter()">حفظ الويتر</button><button class="btn btn-dark" onclick="document.getElementById('switchBox').style.display='none'">إلغاء</button></div>
+
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:13px; font-weight:700; color:#d4af37; margin-bottom:8px;">طاولاتك اليوم (مع إمكانية نقل طاولة لويتر آخر):</div>
+    <div id="myTablesList" style="display:flex; flex-direction:column; gap:6px; max-height:190px; overflow-y:auto;"></div>
   </div>
-  <div id="requestsContainer"></div>
+
+  <div id="alarmBanner" style="display:none; background:#dc2626; color:#fff; padding:18px; border-radius:16px; text-align:center; margin-bottom:16px; box-shadow:0 0 30px rgba(220,38,38,0.8);">
+    <div style="font-size:24px; font-weight:900; margin-bottom:6px;">🚨 تنبيه طلب عاجل! 🚨</div>
+    <div id="alarmDetails" style="font-size:18px; font-weight:700; margin-bottom:14px;"></div>
+    <button class="btn" style="background:#fff; color:#dc2626; font-size:18px; font-weight:900; width:100%; padding:14px;" onclick="acknowledgeAllPending()">
+      ✔ تم الاستلام / إيقاف الإنذار
+    </button>
+  </div>
+
+  <h3 style="margin:0 0 10px; font-size:16px; color:#e4e4e7;">الطلبات الواردة لطاولاتك</h3>
+  <div id="waiterRequestsList" style="display:flex; flex-direction:column; gap:10px;"></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
-  const db = gun.get(PHANTOM_ROOM);
+  const FIREBASE_CONFIG = {
+    databaseURL: 'https://phantom-e79ca-default-rtdb.firebaseio.com'
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const fbDb = firebase.database();
+  const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
+
   const ROSTER_WAITERS = {
-    'W1': { id: 'W1', name: 'Amira', active: true }, 'W2': { id: 'W2', name: 'Hussen', active: true },
-    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true }, 'W4': { id: 'W4', name: 'Vina', active: true },
-    'W5': { id: 'W5', name: 'Nada', active: true }, 'W6': { id: 'W6', name: 'Samara', active: true },
-    'W7': { id: 'W7', name: 'Adel', active: true }, 'W8': { id: 'W8', name: 'Makdeis', active: true },
-    'W9': { id: 'W9', name: 'Haidar', active: true }, 'W10': { id: 'W10', name: 'Rita', active: true },
-    'W11': { id: 'W11', name: 'Somar', active: true }, 'W12': { id: 'W12', name: 'Karim', active: true }
+    'W1': { id: 'W1', name: 'Amira', active: true },
+    'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
+    'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true },
+    'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true },
+    'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true },
+    'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true },
+    'W12': { id: 'W12', name: 'Karim', active: true }
   };
   const ROSTER_SECTIONS = {
     'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
@@ -71,16 +118,30 @@
     'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
     'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
   };
+
   function getAllConfiguredTables() {
     const set = new Set();
-    Object.values(window.PhantomState.sections || {}).forEach(sec => (sec.tables || []).forEach(t => set.add(Number(t))));
+    Object.values(window.PhantomState.sections || {}).forEach(sec => {
+      (sec.tables || []).forEach(t => set.add(Number(t)));
+    });
     return [...set].sort((a,b) => a - b);
   }
+
   window.PhantomState = {
-    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto', adminPin: '0000', waiterPin: '9999' },
-    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)), sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
-    tables: {}, requests: {}, greetings: {}
+    settings: {
+      openHour: 23, openMin: 30,
+      closeHour: 3, closeMin: 20,
+      forceMode: 'auto',
+      adminPin: '0000',
+      waiterPin: '9999'
+    },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
+    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {},
+    requests: {},
+    greetings: {}
   };
+
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
     if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
@@ -90,19 +151,48 @@
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
   } catch(e) {}
-  function saveLocal() { localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState)); bc.postMessage({ type: 'SYNC', state: window.PhantomState }); }
-  bc.onmessage = (ev) => { if (ev.data && ev.data.type === 'SYNC') { window.PhantomState = ev.data.state; if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } };
-  ['settings','waiters','sections','tables','requests','greetings'].forEach(col => {
-    if (col === 'settings') {
-      db.get('settings').on((data) => { if (!data) return; const clean = { ...data }; delete clean._; Object.assign(window.PhantomState.settings, clean); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); });
-    } else {
-      db.get(col).map().on((data, key) => {
-        if (!data) return; const clean = { ...data }; delete clean._;
-        if (col === 'sections' && typeof clean.tables === 'string') { try { clean.tables = JSON.parse(clean.tables); } catch(e) { clean.tables = []; } }
-        window.PhantomState[col][key] = clean; saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
-      });
+
+  function saveLocal(broadcast = true) {
+    localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
+    if (broadcast) {
+      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
     }
+  }
+
+  function fbSetItem(col, key, val) { fbRoomRef.child(col).child(String(key)).set(val); }
+  function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
+
+  bc.onmessage = (ev) => {
+    if (ev.data && ev.data.type === 'SYNC') {
+      window.PhantomState = ev.data.state;
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    }
+  };
+
+  fbRoomRef.on('value', (snap) => {
+    const remote = snap.val();
+    if (!remote || typeof remote !== 'object') return;
+    if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
+    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections && Object.keys(remote.sections).length > 0) {
+      const normalized = {};
+      Object.entries(remote.sections).forEach(([k, sec]) => {
+        if (!sec) return;
+        let tbls = sec.tables;
+        if (typeof tbls === 'string') {
+          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
+        }
+        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
+      });
+      window.PhantomState.sections = normalized;
+    }
+    window.PhantomState.tables = remote.tables || {};
+    window.PhantomState.requests = remote.requests || {};
+    window.PhantomState.greetings = remote.greetings || {};
+    saveLocal(false);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
+
   window.PhantomAPI = {
     getSectionForTable(tableNum) {
       const num = Number(tableNum);
@@ -113,72 +203,279 @@
       return null;
     },
     getEffectiveWaiterId(tableNum) {
-      const k = String(tableNum); const tObj = window.PhantomState.tables[k];
+      const k = String(tableNum);
+      const tObj = window.PhantomState.tables[k];
       if (tObj && tObj.waiterId) return tObj.waiterId;
-      const sec = this.getSectionForTable(Number(tableNum)); return sec ? sec.waiterId : '';
+      const sec = this.getSectionForTable(Number(tableNum));
+      return sec ? sec.waiterId : '';
     },
     getTablesForWaiter(waiterId) {
       const result = [];
       getAllConfiguredTables().forEach(t => {
-        const k = String(t); const tObj = window.PhantomState.tables[k]; const sec = this.getSectionForTable(t);
+        const k = String(t);
+        const tObj = window.PhantomState.tables[k];
+        const sec = this.getSectionForTable(t);
         const effectiveW = (tObj && tObj.waiterId) ? tObj.waiterId : (sec ? sec.waiterId : '');
         if (effectiveW === waiterId) {
-          result.push({ table: t, sectionId: sec ? sec.id : '', sectionName: sec ? sec.name : '', isTransferred: Boolean(tObj && tObj.waiterId && sec && tObj.waiterId !== sec.waiterId), transferredFrom: (tObj && tObj.transferredFrom) || '', code: (tObj && tObj.status === 'active') ? tObj.code : '', status: (tObj && tObj.status) || 'idle' });
+          result.push({
+            table: t,
+            sectionId: sec ? sec.id : '',
+            sectionName: sec ? sec.name : 'بدون سكشن',
+            isTransferred: Boolean(tObj && tObj.waiterId && sec && tObj.waiterId !== sec.waiterId),
+            transferredFrom: (tObj && tObj.transferredFrom) || '',
+            code: (tObj && tObj.status === 'active') ? tObj.code : '',
+            status: (tObj && tObj.status) || 'idle'
+          });
         }
       });
       return result;
     },
-    updateRequest(id, patch) { if (window.PhantomState.requests[id]) { Object.assign(window.PhantomState.requests[id], patch); db.get('requests').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } }
+    transferTableWaiter(tableNum, newWaiterId) {
+      const k = String(tableNum);
+      const prevWaiterId = this.getEffectiveWaiterId(tableNum);
+      const sec = this.getSectionForTable(Number(tableNum));
+      const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
+      const patched = {
+        ...existing,
+        table: k,
+        waiterId: newWaiterId,
+        sectionId: sec ? sec.id : '',
+        manualTransfer: true,
+        transferredFrom: prevWaiterId,
+        updatedAt: Date.now()
+      };
+      window.PhantomState.tables[k] = patched;
+      fbSetItem('tables', k, patched);
+      Object.values(window.PhantomState.requests).forEach(r => {
+        if (String(r.table) === k && r.status === 'pending') {
+          r.waiterId = newWaiterId;
+          fbPatchItem('requests', r.id, { waiterId: newWaiterId });
+        }
+      });
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    updateRequest(id, patch) {
+      if (window.PhantomState.requests[id]) {
+        Object.assign(window.PhantomState.requests[id], patch);
+        fbPatchItem('requests', id, patch);
+        saveLocal(true);
+        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      }
+    },
+    addGreeting(gr) {
+      window.PhantomState.greetings[gr.id] = gr;
+      fbSetItem('greetings', gr.id, gr);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    getUAETimeString() {
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const uae = new Date(utc + (3600000 * 4));
+      return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
   };
-  let currentWaiterId = localStorage.getItem('phantom_device_waiter') || 'W1';
-  let audioCtx = null; let knownPendingIds = new Set();
-  function unlockSound() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); playBeep(); }
+</script>
+
+<script>
+  let assignedWaiterId = localStorage.getItem('phantom_kiosk_waiter_id') || '';
+  let audioCtx = null;
+  let alarmInterval = null;
+
+  function enableAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    playBeep();
+    if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+    alert('تم تفعيل صوت الإنذار والاهتزاز بنجاح');
+  }
+
   function playBeep() {
     try {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-      osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.2, audioCtx.currentTime); osc.connect(gain); gain.connect(audioCtx.destination);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.35);
+      gain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.38);
     } catch(e) {}
   }
-  function openSwitchModal() {
-    const sel = document.getElementById('waiterSelect'); sel.innerHTML = '';
-    Object.values(window.PhantomState.waiters).filter(w => w.active).forEach(w => { sel.innerHTML += `<option value="${w.id}">${w.name}</option>`; });
-    sel.value = currentWaiterId; document.getElementById('switchBox').style.display = 'block';
+
+  function startDangerAlarm() {
+    document.getElementById('waiterBody').classList.add('danger-alarm-bg');
+    if (alarmInterval) return;
+    alarmInterval = setInterval(() => {
+      playBeep();
+      if (navigator.vibrate) navigator.vibrate([600, 200, 600]);
+    }, 900);
   }
-  function confirmSwitchWaiter() {
-    const pin = document.getElementById('waiterPinInput').value.trim();
-    if (pin !== (window.PhantomState.settings.waiterPin || '9999')) { alert('رمز التغيير غير صحيح'); return; }
-    currentWaiterId = document.getElementById('waiterSelect').value; localStorage.setItem('phantom_device_waiter', currentWaiterId);
-    document.getElementById('waiterPinInput').value = ''; document.getElementById('switchBox').style.display = 'none'; renderWaiter();
+
+  function stopDangerAlarm() {
+    document.getElementById('waiterBody').classList.remove('danger-alarm-bg');
+    if (alarmInterval) {
+      clearInterval(alarmInterval);
+      alarmInterval = null;
+    }
+    if (navigator.vibrate) navigator.vibrate(0);
   }
-  function markDone(id) { window.PhantomAPI.updateRequest(id, { status: 'done', doneAt: Date.now() }); }
-  function renderWaiter() {
-    const wObj = window.PhantomState.waiters[currentWaiterId] || { name: currentWaiterId };
-    document.getElementById('waiterTitle').innerText = `الويتر: ${wObj.name}`;
-    const mySecs = Object.values(window.PhantomState.sections).filter(s => s.waiterId === currentWaiterId).map(s => s.name);
-    document.getElementById('waiterSectionSubtitle').innerText = mySecs.length ? `السكشن الأساسي اليوم: ${mySecs.join('، ')}` : 'طاولات منقولة / مخصصة لك اليوم';
-    const assigned = window.PhantomAPI.getTablesForWaiter(currentWaiterId);
-    const tBox = document.getElementById('myAssignedTablesBox');
-    tBox.innerHTML = assigned.length ? assigned.map(item => `<span class="my-t-badge ${item.isTransferred ? 'transferred' : ''}">#${item.table} (${item.sectionName})</span>`).join('') : '<span style="color:#71717a; font-size:12px;">لا توجد طاولات مسندة حالياً</span>';
-    const list = Object.values(window.PhantomState.requests).filter(r => {
-      if (r.status !== 'pending') return false;
-      const effW = window.PhantomAPI.getEffectiveWaiterId(r.table) || r.waiterId;
-      return effW === currentWaiterId;
-    }).sort((a,b) => a.createdAt - b.createdAt);
-    let hasNew = false;
-    list.forEach(r => { if (!knownPendingIds.has(r.id)) { knownPendingIds.add(r.id); hasNew = true; } });
-    if (hasNew) { playBeep(); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); }
-    const container = document.getElementById('requestsContainer'); container.innerHTML = '';
-    if (!list.length) { container.innerHTML = '<div class="card" style="text-align:center; color:#a1a1aa;">لا توجد طلبات معلّقة حالياً 🎉</div>'; return; }
-    const now = Date.now();
-    list.forEach(r => {
-      const secElapsed = Math.floor((now - r.createdAt) / 1000); const isUrgent = secElapsed >= 120;
-      const sec = window.PhantomAPI.getSectionForTable(Number(r.table));
-      container.innerHTML += `<div class="req-card ${isUrgent ? 'urgent' : ''}"><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:20px; font-weight:900; color:#d4af37;">طاولة #${r.table} <span style="font-size:12px; color:#38bdf8;">(${sec ? sec.name : ''})</span></span><span style="font-size:12px; color:${isUrgent ? '#ef4444' : '#a1a1aa'}; font-weight:700;">منذ ${Math.floor(secElapsed/60)}د ${secElapsed%60}ث</span></div><div style="font-size:16px; font-weight:700; margin:8px 0;">${r.type === 'call' ? '🔔 استدعاء إلى الطاولة' : '🍾 ' + r.text}</div><button class="btn btn-success" style="width:100%;" onclick="markDone('${r.id}')">تم التنفيذ ✓</button></div>`;
+
+  function lockDeviceToWaiter() {
+    const wId = document.getElementById('deviceWaiterSelect').value;
+    if (!wId) return;
+    assignedWaiterId = wId;
+    localStorage.setItem('phantom_kiosk_waiter_id', wId);
+    enableAudio();
+    window.onPhantomUpdate();
+  }
+
+  function changeWaiterPrompt() {
+    const pin = prompt('أدخل رمز المشرف لتغيير الويتر (الافتراضي 9999):');
+    if (pin === (window.PhantomState.settings.waiterPin || '9999')) {
+      stopDangerAlarm();
+      assignedWaiterId = '';
+      localStorage.removeItem('phantom_kiosk_waiter_id');
+      window.onPhantomUpdate();
+    } else if (pin !== null) {
+      alert('رمز المشرف غير صحيح');
+    }
+  }
+
+  function transferMyTable(tableNum, newWaiterId) {
+    if (!newWaiterId) return;
+    const wName = (window.PhantomState.waiters[newWaiterId] || {}).name || newWaiterId;
+    if (confirm(`نقل طاولة #${tableNum} إلى ${wName}؟`)) {
+      window.PhantomAPI.transferTableWaiter(tableNum, newWaiterId);
+    }
+  }
+
+  function acknowledgeRequest(id) {
+    window.PhantomAPI.updateRequest(id, { status: 'done' });
+  }
+
+  function acknowledgeAllPending() {
+    Object.values(window.PhantomState.requests).forEach(r => {
+      if (r.waiterId === assignedWaiterId && r.status === 'pending') {
+        window.PhantomAPI.updateRequest(r.id, { status: 'done' });
+      }
     });
+    stopDangerAlarm();
   }
-  window.onPhantomUpdate = renderWaiter; renderWaiter(); setInterval(renderWaiter, 1000);
+
+  function forwardGreetingToScreen(reqId) {
+    const r = window.PhantomState.requests[reqId];
+    if (!r) return;
+    window.PhantomAPI.updateRequest(reqId, { status: 'done', forwarded: true });
+    window.PhantomAPI.addGreeting({
+      id: 'GR_' + Date.now(),
+      table: r.table,
+      text: r.text,
+      waiterId: assignedWaiterId,
+      status: 'approved',
+      createdAt: Date.now(),
+      timeStr: window.PhantomAPI.getUAETimeString()
+    });
+    alert('تم تحويل التحية إلى شاشة العرض ومسؤول الإضاءة!');
+  }
+
+  window.onPhantomUpdate = function() {
+    const sel = document.getElementById('deviceWaiterSelect');
+    const activeWaiters = Object.values(window.PhantomState.waiters).filter(w => w.active);
+    sel.innerHTML = '';
+    activeWaiters.forEach(w => {
+      sel.innerHTML += `<option value="${w.id}">${w.name}</option>`;
+    });
+
+    if (!assignedWaiterId) {
+      document.getElementById('setupScreen').style.display = 'block';
+      document.getElementById('kioskScreen').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('kioskScreen').style.display = 'block';
+    const wObj = window.PhantomState.waiters[assignedWaiterId];
+    document.getElementById('currentWaiterTitle').innerText = wObj ? wObj.name : assignedWaiterId;
+
+    const mySecs = Object.values(window.PhantomState.sections).filter(s => s.waiterId === assignedWaiterId).map(s => s.name);
+    document.getElementById('currentSectionSubtitle').innerText = mySecs.length > 0 ? 'السكشن الأساسي: ' + mySecs.join('، ') : 'طاولات منقولة / مخصصة';
+
+    const myTablesEl = document.getElementById('myTablesList');
+    myTablesEl.innerHTML = '';
+    const myTables = window.PhantomAPI.getTablesForWaiter(assignedWaiterId);
+    const otherWaiters = activeWaiters.filter(w => w.id !== assignedWaiterId);
+
+    myTables.forEach(item => {
+      const otherOpts = `<option value="">نقل طاولة #${item.table} إلى...</option>` +
+        otherWaiters.map(ow => `<option value="${ow.id}">${ow.name}</option>`).join('');
+      const badge = item.status === 'active'
+        ? '<span class="badge" style="background:#16a34a; color:#fff;">مفعّلة</span>'
+        : '<span class="badge" style="background:#27272f; color:#a1a1aa;">فارغة</span>';
+      const trTag = item.isTransferred ? '<span style="font-size:11px; color:#38bdf8;">(منقولة)</span>' : '';
+
+      myTablesEl.innerHTML += `
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; background:#0d0d11; padding:8px 10px; border-radius:10px; border:1px solid #27272f;">
+          <div style="font-size:13px;">
+            <strong class="gold">طاولة #${item.table}</strong> ${badge} ${trTag}
+          </div>
+          <select style="width:auto; min-width:150px; padding:5px 8px; font-size:12px;" onchange="transferMyTable('${item.table}', this.value); this.value='';">${otherOpts}</select>
+        </div>`;
+    });
+
+    const myReqs = Object.values(window.PhantomState.requests)
+      .filter(r => r.waiterId === assignedWaiterId && r.status !== 'expired')
+      .sort((a,b) => b.createdAt - a.createdAt);
+
+    const pendingReqs = myReqs.filter(r => r.status === 'pending');
+    const alarmBanner = document.getElementById('alarmBanner');
+
+    if (pendingReqs.length > 0) {
+      alarmBanner.style.display = 'block';
+      const latest = pendingReqs[0];
+      document.getElementById('alarmDetails').innerText = `طاولة #${latest.table} — ${latest.type === 'call' ? 'استدعاء ويتر' : latest.text}`;
+      startDangerAlarm();
+    } else {
+      alarmBanner.style.display = 'none';
+      stopDangerAlarm();
+    }
+
+    const list = document.getElementById('waiterRequestsList');
+    list.innerHTML = '';
+    if (myReqs.length === 0) {
+      list.innerHTML = '<div class="card" style="text-align:center; color:#71717a;">لا توجد طلبات حالياً — بانتظار طلبات الزبائن</div>';
+    }
+
+    myReqs.forEach(r => {
+      const isPending = r.status === 'pending';
+      let actionBtns = '';
+      if (isPending) {
+        actionBtns += `<button class="btn btn-success" style="flex:1;" onclick="acknowledgeRequest('${r.id}')">✔ استلام</button>`;
+      }
+      if (r.type === 'greeting' && !r.forwarded) {
+        actionBtns += `<button class="btn btn-primary" style="flex:1;" onclick="forwardGreetingToScreen('${r.id}')">📺 إرسال التحية للشاشة</button>`;
+      } else if (r.forwarded) {
+        actionBtns += `<span class="badge" style="background:#0284c7; color:#fff;">تم الإرسال للشاشة</span>`;
+      }
+
+      list.innerHTML += `
+        <div class="card" style="border-color:${isPending ? '#ef4444' : '#27272f'}; background:${isPending ? '#1f1215' : '#141418'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span style="font-size:20px; font-weight:900; color:#d4af37;">طاولة #${r.table}</span>
+            <span style="font-size:12px; color:#a1a1aa;">${r.timeStr || ''}</span>
+          </div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:12px;">
+            ${r.type === 'call' ? '🔔 استدعاء ويتر عاجل' : r.type === 'greeting' ? '✨ تحية للشاشة: ' + r.text : '🍾 طلب: ' + r.text}
+          </div>
+          <div style="display:flex; gap:8px;">${actionBtns}</div>
+        </div>`;
+    });
+  };
+
+  window.onPhantomUpdate();
 </script>
 </body></html>
