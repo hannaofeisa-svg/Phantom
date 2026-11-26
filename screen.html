@@ -9,74 +9,258 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; font-family: 'Cairo', sans-serif; -webkit-tap-highlight-color: transparent; }
-  body { margin: 0; background: #050507; color: #f4f4f5; min-height: 100vh; overflow: hidden; }
+  body { margin: 0; background: #09090b; color: #f4f4f5; min-height: 100vh; }
   .gold { color: #d4af37; }
+  .card { background: #141418; border: 1px solid #27272f; border-radius: 16px; padding: 16px; }
   .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
   .btn-danger { background: #dc2626; color: #fff; }
   .btn-success { background: #16a34a; color: #fff; }
+  .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
-  .mod-bar { position: fixed; bottom: 14px; left: 14px; right: 14px; z-index: 50; background: rgba(20,20,24,0.94); border: 1px solid #32323e; border-radius: 16px; padding: 12px; max-height: 45vh; overflow-y: auto; }
-  .stage { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px; background: radial-gradient(circle at center, #1b1608 0%, #050507 70%); }
-  .greeting-text { font-size: clamp(34px, 6vw, 76px); font-weight: 900; line-height: 1.3; color: #fff; text-shadow: 0 0 30px rgba(212,175,55,0.35); max-width: 1100px; }
-  .greeting-table { margin-top: 18px; font-size: clamp(20px, 3vw, 36px); font-weight: 700; color: #d4af37; }
+  input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: #d4af37; }
+  .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .table-chip { display:inline-block; background:#1e1e26; border:1px solid #343442; color:#f4f4f5; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:700; margin:2px; }
+  .table-chip.active-table { border-color:#d4af37; color:#d4af37; background:#241f10; }
+  .table-chip.transferred { border-color:#38bdf8; color:#38bdf8; background:#0c2230; }
 </style>
-<title>Phantom Club | شاشة التحيات</title></head><body>
-<div class="stage">
-  <div style="font-size:18px; letter-spacing:4px; color:#d4af37; font-weight:700; margin-bottom:14px;">PHANTOM CLUB • ABU DHABI</div>
-  <div id="displayArea"><div class="greeting-text gold">أهلاً بكم في فانتوم كلوب ✨</div><div class="greeting-table">نتمنى لكم ليلة مميزة</div></div>
+<title>Phantom Club | شاشة التحيات والإضاءة</title>
+<style>
+  .led-stage {
+    background: radial-gradient(circle at center, #1e1b2e 0%, #050507 100%);
+    border: 2px solid #d4af37;
+    border-radius: 20px;
+    min-height: 340px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 32px;
+    box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+    position: relative;
+  }
+  .led-text {
+    font-size: clamp(28px, 5vw, 64px);
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 0 20px #d4af37, 0 0 40px #d4af37;
+    line-height: 1.3;
+  }
+  .fullscreen-mode {
+    position: fixed !important;
+    inset: 0;
+    z-index: 9999;
+    border-radius: 0;
+    border: none;
+    min-height: 100vh;
+  }
+</style>
+</head><body>
+<div style="max-width:1000px; margin:0 auto; padding:16px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div>
+      <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والإضاءة</h2>
+      <div style="font-size:13px; color:#a1a1aa;">تستقبل التحيات المعتمدة من الويترية مباشرة</div>
+    </div>
+    <button class="btn btn-primary" onclick="toggleFullScreen()">🖥 وضع الشاشة الكاملة (LED)</button>
+  </div>
+
+  <div id="ledStage" class="led-stage" style="margin-bottom:20px;">
+    <button id="exitFsBtn" class="btn btn-dark" style="display:none; position:absolute; top:16px; left:16px; opacity:0.6;" onclick="toggleFullScreen()">تصغير</button>
+    <div style="color:#d4af37; font-size:18px; font-weight:700; letter-spacing:4px; margin-bottom:12px;">PHANTOM CLUB ABU DHABI</div>
+    <div id="stageTableBadge" style="background:#d4af37; color:#000; padding:6px 18px; border-radius:999px; font-weight:900; font-size:18px; margin-bottom:18px; display:none;"></div>
+    <div id="stageText" class="led-text">أهلاً بكم في فانتوم كلوب</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 12px; color:#d4af37;">التحيات الواردة من الويترية (اضغط لعرضها على الشاشة)</h3>
+    <div id="greetingsQueue" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></div>
+  </div>
 </div>
-<div style="position:fixed; top:14px; left:14px; z-index:60;"><button class="btn btn-dark" onclick="toggleMod()">اعتماد التحيات (<span id="pendingCount">0</span>)</button></div>
-<div id="modPanel" class="mod-bar" style="display:none;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;"><strong class="gold">تحيات الزبائن بانتظار الموافقة</strong><button class="btn btn-dark" style="padding:5px 10px; font-size:12px;" onclick="toggleMod()">إغلاق</button></div>
-  <div id="pendingGreetingsList" style="display:flex; flex-direction:column; gap:8px;"></div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
-  const db = gun.get(PHANTOM_ROOM);
+  const FIREBASE_CONFIG = {
+    databaseURL: 'https://phantom-e79ca-default-rtdb.firebaseio.com'
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const fbDb = firebase.database();
+  const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
-  window.PhantomState = { settings: {}, waiters: {}, sections: {}, tables: {}, requests: {}, greetings: {} };
+
+  const ROSTER_WAITERS = {
+    'W1': { id: 'W1', name: 'Amira', active: true },
+    'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
+    'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true },
+    'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true },
+    'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true },
+    'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true },
+    'W12': { id: 'W12', name: 'Karim', active: true }
+  };
+  const ROSTER_SECTIONS = {
+    'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
+    'S02': { id: 'S02', num: 2, name: 'Section 2', tables: [2,3], waiterId: 'W2' },
+    'S03': { id: 'S03', num: 3, name: 'Section 3', tables: [4,5,6], waiterId: 'W3' },
+    'S04': { id: 'S04', num: 4, name: 'Section 4', tables: [11,21,31,41], waiterId: 'W4' },
+    'S05': { id: 'S05', num: 5, name: 'Section 5', tables: [12,22,32,42], waiterId: 'W5' },
+    'S06': { id: 'S06', num: 6, name: 'Section 6', tables: [14,23,33,43], waiterId: 'W6' },
+    'S07': { id: 'S07', num: 7, name: 'Section 7', tables: [15,24,34,44], waiterId: 'W7' },
+    'S08': { id: 'S08', num: 8, name: 'Section 8', tables: [16,25,35,45], waiterId: 'W8' },
+    'S09': { id: 'S09', num: 9, name: 'Section 9', tables: [26,36,46,47], waiterId: 'W9' },
+    'S10': { id: 'S10', num: 10, name: 'Section 10', tables: [91,92,93], waiterId: 'W10' },
+    'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
+    'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
+  };
+
+  function getAllConfiguredTables() {
+    const set = new Set();
+    Object.values(window.PhantomState.sections || {}).forEach(sec => {
+      (sec.tables || []).forEach(t => set.add(Number(t)));
+    });
+    return [...set].sort((a,b) => a - b);
+  }
+
+  window.PhantomState = {
+    settings: {
+      openHour: 23, openMin: 30,
+      closeHour: 3, closeMin: 20,
+      forceMode: 'auto',
+      adminPin: '0000',
+      waiterPin: '9999'
+    },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
+    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {},
+    requests: {},
+    greetings: {}
+  };
+
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
+    if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
+    if (cached.waiters && Object.keys(cached.waiters).length > 0) window.PhantomState.waiters = cached.waiters;
+    if (cached.sections && Object.keys(cached.sections).length > 0) window.PhantomState.sections = cached.sections;
+    if (cached.tables) window.PhantomState.tables = cached.tables;
+    if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
   } catch(e) {}
-  function saveLocal() { localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState)); bc.postMessage({ type: 'SYNC', state: window.PhantomState }); }
-  bc.onmessage = (ev) => { if (ev.data && ev.data.type === 'SYNC') { window.PhantomState = ev.data.state; if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } };
-  db.get('greetings').map().on((data, key) => {
-    if (!data) return; const clean = { ...data }; delete clean._;
-    window.PhantomState.greetings[key] = clean; saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
-  });
-  window.PhantomAPI = {
-    updateGreeting(id, patch) { if (window.PhantomState.greetings[id]) { Object.assign(window.PhantomState.greetings[id], patch); db.get('greetings').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } }
+
+  function saveLocal(broadcast = true) {
+    localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
+    if (broadcast) {
+      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
+    }
+  }
+
+  function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
+
+  bc.onmessage = (ev) => {
+    if (ev.data && ev.data.type === 'SYNC') {
+      window.PhantomState = ev.data.state;
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    }
   };
-  let queue = []; let shownIds = new Set(); let currentShowing = null;
-  function toggleMod() { const p = document.getElementById('modPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
-  function approveGreeting(id) { window.PhantomAPI.updateGreeting(id, { status: 'approved', approvedAt: Date.now() }); }
-  function rejectGreeting(id) { window.PhantomAPI.updateGreeting(id, { status: 'rejected' }); }
-  function renderScreen() {
-    const all = Object.values(window.PhantomState.greetings || {});
-    const pending = all.filter(g => g.status === 'pending').sort((a,b) => a.createdAt - b.createdAt);
-    document.getElementById('pendingCount').innerText = pending.length;
-    const pList = document.getElementById('pendingGreetingsList'); pList.innerHTML = '';
-    if (!pending.length) pList.innerHTML = '<div style="color:#a1a1aa; font-size:13px;">لا توجد تحيات بانتظار الموافقة.</div>';
-    pending.forEach(g => {
-      pList.innerHTML += `<div style="background:#0d0d11; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;"><div><strong class="gold">طاولة #${g.table}:</strong> <span>${g.text}</span></div><div style="display:flex; gap:6px;"><button class="btn btn-success" style="padding:6px 12px; font-size:12px;" onclick="approveGreeting('${g.id}')">عرض على الشاشة ✓</button><button class="btn btn-danger" style="padding:6px 12px; font-size:12px;" onclick="rejectGreeting('${g.id}')">رفض</button></div></div>`;
+
+  fbRoomRef.on('value', (snap) => {
+    const remote = snap.val();
+    if (!remote || typeof remote !== 'object') return;
+    if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
+    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections && Object.keys(remote.sections).length > 0) {
+      const normalized = {};
+      Object.entries(remote.sections).forEach(([k, sec]) => {
+        if (!sec) return;
+        let tbls = sec.tables;
+        if (typeof tbls === 'string') {
+          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
+        }
+        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
+      });
+      window.PhantomState.sections = normalized;
+    }
+    window.PhantomState.tables = remote.tables || {};
+    window.PhantomState.requests = remote.requests || {};
+    window.PhantomState.greetings = remote.greetings || {};
+    saveLocal(false);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+  });
+
+  window.PhantomAPI = {
+    updateGreeting(id, patch) {
+      if (window.PhantomState.greetings[id]) {
+        Object.assign(window.PhantomState.greetings[id], patch);
+        fbPatchItem('greetings', id, patch);
+        saveLocal(true);
+        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      }
+    }
+  };
+</script>
+
+<script>
+  let activeGreetingId = null;
+
+  function toggleFullScreen() {
+    const stage = document.getElementById('ledStage');
+    const exitBtn = document.getElementById('exitFsBtn');
+    stage.classList.toggle('fullscreen-mode');
+    exitBtn.style.display = stage.classList.contains('fullscreen-mode') ? 'inline-flex' : 'none';
+  }
+
+  function displayOnScreen(id) {
+    const g = window.PhantomState.greetings[id];
+    if (!g) return;
+    activeGreetingId = id;
+    document.getElementById('stageTableBadge').style.display = 'inline-block';
+    document.getElementById('stageTableBadge').innerText = 'TABLE #' + g.table;
+    document.getElementById('stageText').innerText = g.text;
+    window.PhantomAPI.updateGreeting(id, { displayed: true });
+  }
+
+  function clearScreen() {
+    activeGreetingId = null;
+    document.getElementById('stageTableBadge').style.display = 'none';
+    document.getElementById('stageText').innerText = 'أهلاً بكم في فانتوم كلوب';
+  }
+
+  window.onPhantomUpdate = function() {
+    const q = document.getElementById('greetingsQueue');
+    q.innerHTML = '';
+    const list = Object.values(window.PhantomState.greetings).sort((a,b) => b.createdAt - a.createdAt);
+    if (list.length === 0) {
+      q.innerHTML = '<div style="color:#71717a;">لا توجد تحيات معتمدة بعد</div>';
+      return;
+    }
+    list.forEach(g => {
+      const isShowing = activeGreetingId === g.id;
+      q.innerHTML += `
+        <div style="background:#0d0d11; border:1px solid ${isShowing ? '#22c55e' : '#27272f'}; border-radius:12px; padding:14px;">
+          <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+            <strong class="gold">طاولة #${g.table}</strong>
+            <span style="color:#a1a1aa;">${g.timeStr || ''}</span>
+          </div>
+          <div style="font-size:16px; font-weight:700; margin-bottom:12px;">"${g.text}"</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="displayOnScreen('${g.id}')">📺 عرض على الشاشة</button>
+            ${isShowing ? `<button class="btn btn-danger" onclick="clearScreen()">إيقاف</button>` : ''}
+          </div>
+        </div>`;
     });
-    all.filter(g => g.status === 'approved' && !shownIds.has(g.id)).sort((a,b) => (a.approvedAt || a.createdAt) - (b.approvedAt || b.createdAt)).forEach(g => { shownIds.add(g.id); queue.push(g); });
-    pumpQueue();
-  }
-  function pumpQueue() {
-    if (currentShowing || !queue.length) return;
-    currentShowing = queue.shift();
-    document.getElementById('displayArea').innerHTML = `<div class="greeting-text">${currentShowing.text}</div><div class="greeting-table">من طاولة #${currentShowing.table} ✨</div>`;
-    setTimeout(() => {
-      currentShowing = null;
-      if (!queue.length) document.getElementById('displayArea').innerHTML = `<div class="greeting-text gold">أهلاً بكم في فانتوم كلوب ✨</div><div class="greeting-table">نتمنى لكم ليلة مميزة</div>`;
-      pumpQueue();
-    }, 8000);
-  }
-  window.onPhantomUpdate = renderScreen; renderScreen();
+  };
+
+  window.onPhantomUpdate();
 </script>
 </body></html>
