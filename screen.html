@@ -41,7 +41,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #27272f; padding-bottom:12px; margin-bottom:16px;">
     <div>
       <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والطاولات</h2>
-      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة سكرين شوت جاهزة للسحب أو النسخ أو العرض</div>
+      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة سكرين شوت بنفس لغة النص المرسل</div>
     </div>
     <button class="btn btn-dark" onclick="toggleOpenedTablesPanel()" id="toggleTablesBtn">🪑 إخفاء / إظهار الطاولات المفتوحة</button>
   </div>
@@ -198,7 +198,11 @@
 
 <script>
   let currentDisplayedId = null;
-  const screenshotCache = {}; // يخزن DataURL و Blob لكل تحية
+  const screenshotCache = {};
+
+  function isArabicMessage(text) {
+    return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(String(text || ''));
+  }
 
   function toggleOpenedTablesPanel() {
     const el = document.getElementById('openedTablesSection');
@@ -225,18 +229,19 @@
   }
 
   function buildPhoneScreenshotDataUrl(g) {
-    const cacheKey = `${g.id}_${g.table}_${g.text}`;
+    const isAr = isArabicMessage(g.text);
+    const langMode = isAr ? 'ar' : 'en';
+    const cacheKey = `${g.id}_${g.table}_${g.text}_${langMode}`;
     if (screenshotCache[cacheKey]) return screenshotCache[cacheKey];
 
-    // أبعاد لقطة شاشة هاتف (9:16) بدقة عالية
     const W = 720;
     const H = 1280;
     const canvas = document.createElement('canvas');
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d');
+    ctx.direction = isAr ? 'rtl' : 'ltr';
 
-    // خلفية داكنة فاخرة بتدرج ذهبي خفيف
     const bgGrad = ctx.createRadialGradient(W / 2, H * 0.25, 40, W / 2, H / 2, H * 0.75);
     bgGrad.addColorStop(0, '#2a210d');
     bgGrad.addColorStop(0.55, '#111116');
@@ -244,7 +249,6 @@
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // شريط الحالة العلوي للهاتف (Status Bar)
     ctx.fillStyle = '#e4e4e7';
     ctx.font = '700 22px Cairo, sans-serif';
     ctx.textAlign = 'left';
@@ -253,13 +257,11 @@
     ctx.textAlign = 'right';
     ctx.fillText('5G   100% 🔋', W - 42, 46);
 
-    // نوتش / جزيرة علوية للهاتف (Dynamic Island)
     ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.roundRect((W - 180) / 2, 22, 180, 34, 17);
     ctx.fill();
 
-    // إطار بطاقة التحية في منتصف الشاشة
     const cardX = 48;
     const cardY = 170;
     const cardW = W - 96;
@@ -272,7 +274,6 @@
     ctx.fill();
     ctx.stroke();
 
-    // شعار النادي في أعلى البطاقة
     ctx.textAlign = 'center';
     ctx.fillStyle = '#d4af37';
     ctx.font = '900 38px Cairo, sans-serif';
@@ -280,9 +281,8 @@
 
     ctx.fillStyle = '#a1a1aa';
     ctx.font = '600 22px Cairo, sans-serif';
-    ctx.fillText('ABU DHABI • VIP GREETING', W / 2, cardY + 125);
+    ctx.fillText(isAr ? 'أبوظبي • تحية خاصة' : 'ABU DHABI • SPECIAL GREETING', W / 2, cardY + 125);
 
-    // خط فاصل ذهبي
     ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -290,9 +290,11 @@
     ctx.lineTo(cardX + cardW - 60, cardY + 155);
     ctx.stroke();
 
-    // شارة رقم الطاولة أو المصدر
     const rawTable = String(g.table || '').trim();
-    const tableTitle = /^\d+$/.test(rawTable) ? `TABLE #${rawTable} • طاولة` : (rawTable || 'VIP');
+    const tableTitle = /^\d+$/.test(rawTable)
+      ? (isAr ? `طاولة #${rawTable}` : `TABLE #${rawTable}`)
+      : (rawTable || (isAr ? 'تحية' : 'GREETING'));
+
     ctx.fillStyle = '#241f10';
     ctx.strokeStyle = '#d4af37';
     ctx.lineWidth = 2;
@@ -305,7 +307,6 @@
     ctx.font = '900 30px Cairo, sans-serif';
     ctx.fillText(tableTitle, W / 2, cardY + 231);
 
-    // نص التحية في وسط الصورة
     const textLen = String(g.text || '').length;
     const fontSize = textLen > 90 ? 38 : (textLen > 45 ? 46 : 56);
     ctx.fillStyle = '#ffffff';
@@ -320,15 +321,13 @@
       startY += lineHeight;
     });
 
-    // تذييل البطاقة
-    const sourceText = g.waiterId === 'ADMIN'
-      ? 'ADMINISTRATION'
-      : (g.waiterId === 'DOOR' ? 'RECEPTION' : 'VIP TABLE SERVICE');
+    const sourceText = isAr
+      ? (g.waiterId === 'ADMIN' ? 'الإدارة' : (g.waiterId === 'DOOR' ? 'الاستقبال' : 'خدمة الطاولات'))
+      : (g.waiterId === 'ADMIN' ? 'ADMINISTRATION' : (g.waiterId === 'DOOR' ? 'RECEPTION' : 'TABLE SERVICE'));
     ctx.fillStyle = '#d4af37';
     ctx.font = '700 22px Cairo, sans-serif';
     ctx.fillText(`✨ ${sourceText} ✨`, W / 2, cardY + cardH - 42);
 
-    // شريط السحب السفلي للهاتف (Home Indicator)
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();
     ctx.roundRect((W - 220) / 2, H - 36, 220, 8, 4);
@@ -402,7 +401,6 @@
   }
 
   window.onPhantomUpdate = function() {
-    // 0. تنبيهات تأخر التحيات الواردة من الويترية
     const alertsBox = document.getElementById('delayAlertsBox');
     if (alertsBox) {
       const activeAlerts = Object.values(window.PhantomState.screenAlerts || {})
@@ -426,7 +424,6 @@
       }
     }
 
-    // 1. تحديث قائمة الطاولات المفتوحة وأسعارها
     const openedGrid = document.getElementById('openedTablesGrid');
     const countEl = document.getElementById('openedTablesCount');
     if (openedGrid) {
@@ -462,7 +459,6 @@
       }
     }
 
-    // 2. تحديث قائمة التحيات الواردة كصور سكرين شوت قابلة للسحب والنسخ والتحميل
     const q = document.getElementById('greetingsQueue');
     q.innerHTML = '';
     const list = Object.values(window.PhantomState.greetings || {}).sort((a,b) => b.createdAt - a.createdAt);
@@ -472,7 +468,6 @@
       return;
     }
 
-    // عرض أحدث تحية تلقائياً في المعاينة إن لم يكن هناك تحية محددة
     if (!currentDisplayedId && list.length > 0) {
       const latest = list[0];
       const latestUrl = buildPhoneScreenshotDataUrl(latest);
@@ -491,9 +486,14 @@
     }
 
     list.forEach(g => {
+      const isAr = isArabicMessage(g.text);
       const isDisp = g.status === 'displayed' || currentDisplayedId === g.id;
-      const sourceLabel = g.waiterId === 'ADMIN' ? 'من الإدارة' : (g.waiterId === 'DOOR' ? 'من الباب' : 'من الويتر');
-      const tLabel = /^\d+$/.test(String(g.table || '').trim()) ? `طاولة #${g.table}` : `${g.table || 'تحية'}`;
+      const sourceLabel = isAr
+        ? (g.waiterId === 'ADMIN' ? 'من الإدارة' : (g.waiterId === 'DOOR' ? 'من الباب' : 'من الويتر'))
+        : (g.waiterId === 'ADMIN' ? 'From Admin' : (g.waiterId === 'DOOR' ? 'From Door' : 'From Waiter'));
+      const tLabel = /^\d+$/.test(String(g.table || '').trim())
+        ? (isAr ? `طاولة #${g.table}` : `Table #${g.table}`)
+        : (g.table || (isAr ? 'تحية' : 'Greeting'));
       const dataUrl = buildPhoneScreenshotDataUrl(g);
 
       const card = document.createElement('div');
@@ -524,7 +524,9 @@
       dragHint.style.textAlign = 'center';
       dragHint.style.fontSize = '11px';
       dragHint.style.color = '#a1a1aa';
-      dragHint.innerText = '🖱️ اسحب الصورة أعلاه لنقلها مباشرة لأي صفحة ثانية';
+      dragHint.innerText = isAr
+        ? '🖱️ اسحب الصورة أعلاه لنقلها مباشرة لأي صفحة ثانية'
+        : '🖱️ Drag the image above to move it to another window';
       card.appendChild(dragHint);
 
       const actions = document.createElement('div');
@@ -535,13 +537,13 @@
       const showBtn = document.createElement('button');
       showBtn.className = `btn ${isDisp ? 'btn-success' : 'btn-primary'}`;
       showBtn.style.flex = '1';
-      showBtn.innerText = isDisp ? '✔ في المعاينة' : 'تكبير';
+      showBtn.innerText = isDisp ? (isAr ? '✔ في المعاينة' : '✔ In Preview') : (isAr ? 'تكبير' : 'Preview');
       showBtn.onclick = () => displayOnScreen(g.id);
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn btn-info';
       copyBtn.style.flex = '1';
-      copyBtn.innerText = '📋 نسخ الصورة';
+      copyBtn.innerText = isAr ? '📋 نسخ الصورة' : '📋 Copy';
       copyBtn.onclick = () => copyImageDataUrlToClipboard(dataUrl);
 
       const dlLink = document.createElement('a');
