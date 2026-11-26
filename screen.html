@@ -23,9 +23,9 @@
   .screenshot-frame {
     width: 100%;
     max-width: 260px;
-    border-radius: 24px;
-    border: 2px solid #3f3f46;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    border-radius: 14px;
+    border: none;
+    box-shadow: none;
     cursor: grab;
     display: block;
     margin: 0 auto;
@@ -41,7 +41,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #27272f; padding-bottom:12px; margin-bottom:16px;">
     <div>
       <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والطاولات</h2>
-      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة سكرين شوت بنفس لغة النص المرسل</div>
+      <div style="font-size:13px; color:#a1a1aa;">تصل كل تحية كصورة بخلفية سوداء غامقة تحتوي على نص التحية فقط</div>
     </div>
     <button class="btn btn-dark" onclick="toggleOpenedTablesPanel()" id="toggleTablesBtn">🪑 إخفاء / إظهار الطاولات المفتوحة</button>
   </div>
@@ -211,7 +211,7 @@
   }
 
   function wrapCanvasText(ctx, text, maxWidth) {
-    const words = String(text || '').split(/\s+/);
+    const words = String(text || '').split(/\s+/).filter(Boolean);
     const lines = [];
     let currentLine = '';
     for (let i = 0; i < words.length; i++) {
@@ -229,9 +229,9 @@
   }
 
   function buildPhoneScreenshotDataUrl(g) {
-    const isAr = isArabicMessage(g.text);
-    const langMode = isAr ? 'ar' : 'en';
-    const cacheKey = `${g.id}_${g.table}_${g.text}_${langMode}`;
+    const cleanText = String(g.text || '').trim();
+    const isAr = isArabicMessage(cleanText);
+    const cacheKey = `${g.id}_${cleanText}_${isAr ? 'ar' : 'en'}`;
     if (screenshotCache[cacheKey]) return screenshotCache[cacheKey];
 
     const W = 720;
@@ -240,98 +240,30 @@
     canvas.width = W;
     canvas.height = H;
     const ctx = canvas.getContext('2d');
-    ctx.direction = isAr ? 'rtl' : 'ltr';
 
-    const bgGrad = ctx.createRadialGradient(W / 2, H * 0.25, 40, W / 2, H / 2, H * 0.75);
-    bgGrad.addColorStop(0, '#2a210d');
-    bgGrad.addColorStop(0.55, '#111116');
-    bgGrad.addColorStop(1, '#070709');
-    ctx.fillStyle = bgGrad;
+    // خلفية سوداء غامقة صافية بدون أي كادر أو عناصر إضافية
+    ctx.fillStyle = '#050507';
     ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = '#e4e4e7';
-    ctx.font = '700 22px Cairo, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(g.timeStr || '12:00 AM', 42, 46);
-
-    ctx.textAlign = 'right';
-    ctx.fillText('5G   100% 🔋', W - 42, 46);
-
-    ctx.fillStyle = '#000000';
-    ctx.beginPath();
-    ctx.roundRect((W - 180) / 2, 22, 180, 34, 17);
-    ctx.fill();
-
-    const cardX = 48;
-    const cardY = 170;
-    const cardW = W - 96;
-    const cardH = H - 320;
-    ctx.fillStyle = 'rgba(20, 20, 26, 0.92)';
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, cardH, 36);
-    ctx.fill();
-    ctx.stroke();
-
+    ctx.direction = isAr ? 'rtl' : 'ltr';
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#d4af37';
-    ctx.font = '900 38px Cairo, sans-serif';
-    ctx.fillText('PHANTOM CLUB', W / 2, cardY + 85);
+    ctx.textBaseline = 'middle';
 
-    ctx.fillStyle = '#a1a1aa';
-    ctx.font = '600 22px Cairo, sans-serif';
-    ctx.fillText(isAr ? 'أبوظبي • تحية خاصة' : 'ABU DHABI • SPECIAL GREETING', W / 2, cardY + 125);
-
-    ctx.strokeStyle = 'rgba(212, 175, 55, 0.35)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(cardX + 60, cardY + 155);
-    ctx.lineTo(cardX + cardW - 60, cardY + 155);
-    ctx.stroke();
-
-    const rawTable = String(g.table || '').trim();
-    const tableTitle = /^\d+$/.test(rawTable)
-      ? (isAr ? `طاولة #${rawTable}` : `TABLE #${rawTable}`)
-      : (rawTable || (isAr ? 'تحية' : 'GREETING'));
-
-    ctx.fillStyle = '#241f10';
-    ctx.strokeStyle = '#d4af37';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect((W - 360) / 2, cardY + 190, 360, 62, 31);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '900 30px Cairo, sans-serif';
-    ctx.fillText(tableTitle, W / 2, cardY + 231);
-
-    const textLen = String(g.text || '').length;
-    const fontSize = textLen > 90 ? 38 : (textLen > 45 ? 46 : 56);
+    const maxTextWidth = W - 110;
+    const textLen = cleanText.length;
+    const fontSize = textLen > 120 ? 36 : (textLen > 70 ? 44 : (textLen > 35 ? 54 : 64));
     ctx.fillStyle = '#ffffff';
     ctx.font = `900 ${fontSize}px Cairo, sans-serif`;
-    const lines = wrapCanvasText(ctx, g.text, cardW - 80);
+
+    const lines = wrapCanvasText(ctx, cleanText, maxTextWidth);
     const lineHeight = fontSize * 1.45;
-    const totalTextH = lines.length * lineHeight;
-    let startY = cardY + 310 + Math.max(0, ((cardH - 420) - totalTextH) / 2) + fontSize;
+    const totalHeight = lines.length * lineHeight;
+    let currentY = (H - totalHeight) / 2 + lineHeight / 2;
 
     lines.forEach(line => {
-      ctx.fillText(line, W / 2, startY);
-      startY += lineHeight;
+      ctx.fillText(line, W / 2, currentY);
+      currentY += lineHeight;
     });
-
-    const sourceText = isAr
-      ? (g.waiterId === 'ADMIN' ? 'الإدارة' : (g.waiterId === 'DOOR' ? 'الاستقبال' : 'خدمة الطاولات'))
-      : (g.waiterId === 'ADMIN' ? 'ADMINISTRATION' : (g.waiterId === 'DOOR' ? 'RECEPTION' : 'TABLE SERVICE'));
-    ctx.fillStyle = '#d4af37';
-    ctx.font = '700 22px Cairo, sans-serif';
-    ctx.fillText(`✨ ${sourceText} ✨`, W / 2, cardY + cardH - 42);
-
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.beginPath();
-    ctx.roundRect((W - 220) / 2, H - 36, 220, 8, 4);
-    ctx.fill();
 
     const dataUrl = canvas.toDataURL('image/png');
     screenshotCache[cacheKey] = dataUrl;
@@ -342,10 +274,10 @@
     imgEl.draggable = true;
     imgEl.addEventListener('dragstart', (e) => {
       if (!e.dataTransfer) return;
-      const filename = `phantom_greeting_table_${g.table || 'vip'}.png`;
+      const filename = `phantom_greeting_${g.id || 'msg'}.png`;
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('text/uri-list', dataUrl);
-      e.dataTransfer.setData('text/plain', `${g.table ? 'Table #' + g.table + ': ' : ''}${g.text}`);
+      e.dataTransfer.setData('text/plain', String(g.text || ''));
       try {
         e.dataTransfer.setData('DownloadURL', `image/png:${filename}:${dataUrl}`);
       } catch(err) {}
@@ -359,7 +291,7 @@
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ]);
-      alert('✅ تم نسخ صورة السكرين شوت للحافظة! يمكنك لصقها مباشرة في أي صفحة أو تطبيق.');
+      alert('✅ تم نسخ الصورة للحافظة! يمكنك لصقها مباشرة في أي صفحة أو تطبيق.');
     } catch (err) {
       alert('تعذر النسخ التلقائي للحافظة في هذا المتصفح — يمكنك سحب الصورة مباشرة أو الضغط على زر حفظ الصورة.');
     }
@@ -380,7 +312,7 @@
 
     const img = document.createElement('img');
     img.src = dataUrl;
-    img.alt = `Greeting Table ${g.table}`;
+    img.alt = g.text || 'Greeting';
     img.className = 'screenshot-frame';
     img.style.maxWidth = '300px';
     setupDraggableImage(img, g, dataUrl);
@@ -388,7 +320,7 @@
 
     const dlBtn = document.getElementById('stageDownloadBtn');
     dlBtn.href = dataUrl;
-    dlBtn.download = `phantom_greeting_${g.table || 'vip'}.png`;
+    dlBtn.download = `phantom_greeting_${g.id || 'msg'}.png`;
     document.getElementById('stageActions').style.display = 'flex';
 
     window.PhantomAPI.updateGreeting(id, { status: 'displayed' });
@@ -481,19 +413,13 @@
       holder.appendChild(stageImg);
       const dlBtn = document.getElementById('stageDownloadBtn');
       dlBtn.href = latestUrl;
-      dlBtn.download = `phantom_greeting_${latest.table || 'vip'}.png`;
+      dlBtn.download = `phantom_greeting_${latest.id || 'msg'}.png`;
       document.getElementById('stageActions').style.display = 'flex';
     }
 
     list.forEach(g => {
       const isAr = isArabicMessage(g.text);
       const isDisp = g.status === 'displayed' || currentDisplayedId === g.id;
-      const sourceLabel = isAr
-        ? (g.waiterId === 'ADMIN' ? 'من الإدارة' : (g.waiterId === 'DOOR' ? 'من الباب' : 'من الويتر'))
-        : (g.waiterId === 'ADMIN' ? 'From Admin' : (g.waiterId === 'DOOR' ? 'From Door' : 'From Waiter'));
-      const tLabel = /^\d+$/.test(String(g.table || '').trim())
-        ? (isAr ? `طاولة #${g.table}` : `Table #${g.table}`)
-        : (g.table || (isAr ? 'تحية' : 'Greeting'));
       const dataUrl = buildPhoneScreenshotDataUrl(g);
 
       const card = document.createElement('div');
@@ -503,19 +429,9 @@
       card.style.flexDirection = 'column';
       card.style.gap = '10px';
 
-      const header = document.createElement('div');
-      header.style.display = 'flex';
-      header.style.justifyContent = 'space-between';
-      header.style.alignItems = 'center';
-      header.innerHTML = `
-        <span style="font-size:13px; color:#d4af37; font-weight:700;">${tLabel} (${sourceLabel})</span>
-        <span style="font-size:11px; color:#a1a1aa;">${g.timeStr || ''}</span>
-      `;
-      card.appendChild(header);
-
       const img = document.createElement('img');
       img.src = dataUrl;
-      img.alt = `${tLabel} - ${g.text}`;
+      img.alt = g.text || 'Greeting';
       img.className = 'screenshot-frame';
       setupDraggableImage(img, g, dataUrl);
       card.appendChild(img);
@@ -525,8 +441,8 @@
       dragHint.style.fontSize = '11px';
       dragHint.style.color = '#a1a1aa';
       dragHint.innerText = isAr
-        ? '🖱️ اسحب الصورة أعلاه لنقلها مباشرة لأي صفحة ثانية'
-        : '🖱️ Drag the image above to move it to another window';
+        ? '🖱️ اسحب الصورة لنقلها إلى صفحة ثانية'
+        : '🖱️ Drag the image to another window';
       card.appendChild(dragHint);
 
       const actions = document.createElement('div');
@@ -550,7 +466,7 @@
       dlLink.className = 'btn btn-dark';
       dlLink.style.flex = '1';
       dlLink.href = dataUrl;
-      dlLink.download = `phantom_greeting_${g.table || 'vip'}.png`;
+      dlLink.download = `phantom_greeting_${g.id || 'msg'}.png`;
       dlLink.innerText = '⬇️ PNG';
 
       actions.appendChild(showBtn);
