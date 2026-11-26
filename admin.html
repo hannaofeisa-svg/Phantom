@@ -35,6 +35,7 @@
     <button class="btn btn-primary" style="width:100%;" onclick="checkLogin()">دخول الإدارة</button>
   </div>
 </div>
+
 <div id="mainApp" style="display:none; max-width:1220px; margin:0 auto; padding:16px;">
   <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; border-bottom:1px solid #27272f; padding-bottom:14px;">
     <div>
@@ -47,6 +48,7 @@
       <button class="btn btn-danger" onclick="confirmReset()">تصفير الليلة وإغلاق الطاولات</button>
     </div>
   </div>
+
   <div class="card" style="margin-bottom:18px; border-color:#d4af37;">
     <div style="margin-bottom:12px;">
       <h3 style="margin:0; color:#d4af37;">توزيع السكاشن الـ 12 والويترية لهذا اليوم</h3>
@@ -54,6 +56,7 @@
     </div>
     <div id="sectionsRosterGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap:12px;"></div>
   </div>
+
   <div class="card" style="margin-bottom:18px; border-color:#38bdf8;">
     <h3 style="margin:0 0 10px; color:#38bdf8;">نقل طاولة محددة من ويتر إلى ويتر آخر</h3>
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap:12px; align-items:end;">
@@ -72,6 +75,7 @@
       <button class="btn btn-info" onclick="executeTableTransfer()">نقل الطاولة الآن</button>
     </div>
   </div>
+
   <div class="card" style="margin-bottom:18px;">
     <h3 style="margin:0 0 12px; color:#d4af37;">التحكم بالتوقيت والرموز</h3>
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; align-items:end;">
@@ -94,30 +98,48 @@
       <button class="btn btn-primary" onclick="savePins()">حفظ الرموز</button>
     </div>
   </div>
+
   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:16px;">
     <div class="card">
       <h3 style="margin:0 0 12px; color:#d4af37;">قائمة الويترية (12 ويتر) وطاولاتهم اليوم</h3>
       <div id="waitersList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
     </div>
+
     <div class="card">
       <h3 style="margin:0 0 12px; color:#d4af37;">مراقبة الطلبات والتحويلات المباشرة</h3>
       <div id="liveRequestsList" style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
     </div>
   </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
-  const db = gun.get(PHANTOM_ROOM);
+  const FIREBASE_CONFIG = {
+    databaseURL: 'https://phantom-e79ca-default-rtdb.firebaseio.com'
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const fbDb = firebase.database();
+  const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
+
   const ROSTER_WAITERS = {
-    'W1': { id: 'W1', name: 'Amira', active: true }, 'W2': { id: 'W2', name: 'Hussen', active: true },
-    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true }, 'W4': { id: 'W4', name: 'Vina', active: true },
-    'W5': { id: 'W5', name: 'Nada', active: true }, 'W6': { id: 'W6', name: 'Samara', active: true },
-    'W7': { id: 'W7', name: 'Adel', active: true }, 'W8': { id: 'W8', name: 'Makdeis', active: true },
-    'W9': { id: 'W9', name: 'Haidar', active: true }, 'W10': { id: 'W10', name: 'Rita', active: true },
-    'W11': { id: 'W11', name: 'Somar', active: true }, 'W12': { id: 'W12', name: 'Karim', active: true }
+    'W1': { id: 'W1', name: 'Amira', active: true },
+    'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
+    'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true },
+    'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true },
+    'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true },
+    'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true },
+    'W12': { id: 'W12', name: 'Karim', active: true }
   };
   const ROSTER_SECTIONS = {
     'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
@@ -133,16 +155,30 @@
     'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
     'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
   };
+
   function getAllConfiguredTables() {
     const set = new Set();
-    Object.values(window.PhantomState.sections || {}).forEach(sec => (sec.tables || []).forEach(t => set.add(Number(t))));
+    Object.values(window.PhantomState.sections || {}).forEach(sec => {
+      (sec.tables || []).forEach(t => set.add(Number(t)));
+    });
     return [...set].sort((a,b) => a - b);
   }
+
   window.PhantomState = {
-    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto', adminPin: '0000', waiterPin: '9999' },
-    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)), sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
-    tables: {}, requests: {}, greetings: {}
+    settings: {
+      openHour: 23, openMin: 30,
+      closeHour: 3, closeMin: 20,
+      forceMode: 'auto',
+      adminPin: '0000',
+      waiterPin: '9999'
+    },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
+    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {},
+    requests: {},
+    greetings: {}
   };
+
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
     if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
@@ -152,47 +188,63 @@
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
   } catch(e) {}
-  function saveLocal() {
+
+  function saveLocal(broadcast = true) {
     localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
-    bc.postMessage({ type: 'SYNC', state: window.PhantomState });
+    if (broadcast) {
+      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
+    }
   }
+
+  function fbSetSettings(patch) { fbRoomRef.child('settings').update(patch); }
+  function fbSetItem(col, key, val) { fbRoomRef.child(col).child(String(key)).set(val); }
+  function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
+  function fbSyncFullState() { fbRoomRef.set(window.PhantomState); }
+
   bc.onmessage = (ev) => {
     if (ev.data && ev.data.type === 'SYNC') {
       window.PhantomState = ev.data.state;
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     }
   };
-  ['settings','waiters','sections','tables','requests','greetings'].forEach(col => {
-    if (col === 'settings') {
-      db.get('settings').on((data) => {
-        if (!data) return; const clean = { ...data }; delete clean._;
-        Object.assign(window.PhantomState.settings, clean); saveLocal();
-        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
-      });
-    } else {
-      db.get(col).map().on((data, key) => {
-        if (!data) return; const clean = { ...data }; delete clean._;
-        if (col === 'sections' && typeof clean.tables === 'string') {
-          try { clean.tables = JSON.parse(clean.tables); } catch(e) { clean.tables = []; }
+
+  fbRoomRef.on('value', (snap) => {
+    const remote = snap.val();
+    if (!remote || typeof remote !== 'object') return;
+    if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
+    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections && Object.keys(remote.sections).length > 0) {
+      const normalized = {};
+      Object.entries(remote.sections).forEach(([k, sec]) => {
+        if (!sec) return;
+        let tbls = sec.tables;
+        if (typeof tbls === 'string') {
+          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
         }
-        window.PhantomState[col][key] = clean; saveLocal();
-        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
       });
+      window.PhantomState.sections = normalized;
     }
+    window.PhantomState.tables = remote.tables || {};
+    window.PhantomState.requests = remote.requests || {};
+    window.PhantomState.greetings = remote.greetings || {};
+    saveLocal(false);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
+
   window.PhantomAPI = {
     restoreDefaultRoster() {
       window.PhantomState.waiters = JSON.parse(JSON.stringify(ROSTER_WAITERS));
       window.PhantomState.sections = JSON.parse(JSON.stringify(ROSTER_SECTIONS));
-      Object.values(window.PhantomState.waiters).forEach(w => db.get('waiters').get(w.id).put(w));
-      Object.values(window.PhantomState.sections).forEach(s => db.get('sections').get(s.id).put({ ...s, tables: JSON.stringify(s.tables || []) }));
       getAllConfiguredTables().forEach(tNum => {
-        const k = String(tNum); const sec = this.getSectionForTable(tNum);
+        const k = String(tNum);
+        const sec = this.getSectionForTable(tNum);
         const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
-        const patched = { ...existing, table: k, waiterId: sec ? sec.waiterId : '', sectionId: sec ? sec.id : '', manualTransfer: false, transferredFrom: '' };
-        window.PhantomState.tables[k] = patched; db.get('tables').get(k).put(patched);
+        window.PhantomState.tables[k] = { ...existing, table: k, waiterId: sec ? sec.waiterId : '', sectionId: sec ? sec.id : '', manualTransfer: false, transferredFrom: '' };
       });
-      saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      saveLocal(true);
+      fbSyncFullState();
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
     getAllTables() { return getAllConfiguredTables(); },
     getSectionForTable(tableNum) {
@@ -204,7 +256,8 @@
       return null;
     },
     getEffectiveWaiterId(tableNum) {
-      const k = String(tableNum); const tObj = window.PhantomState.tables[k];
+      const k = String(tableNum);
+      const tObj = window.PhantomState.tables[k];
       if (tObj && tObj.waiterId) return tObj.waiterId;
       const sec = this.getSectionForTable(Number(tableNum));
       return sec ? sec.waiterId : '';
@@ -212,152 +265,310 @@
     getTablesForWaiter(waiterId) {
       const result = [];
       getAllConfiguredTables().forEach(t => {
-        const k = String(t); const tObj = window.PhantomState.tables[k]; const sec = this.getSectionForTable(t);
+        const k = String(t);
+        const tObj = window.PhantomState.tables[k];
+        const sec = this.getSectionForTable(t);
         const effectiveW = (tObj && tObj.waiterId) ? tObj.waiterId : (sec ? sec.waiterId : '');
         if (effectiveW === waiterId) {
           result.push({
-            table: t, sectionId: sec ? sec.id : '', sectionName: sec ? sec.name : 'بدون سكشن',
+            table: t,
+            sectionId: sec ? sec.id : '',
+            sectionName: sec ? sec.name : 'بدون سكشن',
             isTransferred: Boolean(tObj && tObj.waiterId && sec && tObj.waiterId !== sec.waiterId),
             transferredFrom: (tObj && tObj.transferredFrom) || '',
-            code: (tObj && tObj.status === 'active') ? tObj.code : '', status: (tObj && tObj.status) || 'idle'
+            code: (tObj && tObj.status === 'active') ? tObj.code : '',
+            status: (tObj && tObj.status) || 'idle'
           });
         }
       });
       return result;
     },
     assignSectionWaiter(sectionId, waiterId, alsoUpdateActiveTables = true) {
-      const sec = window.PhantomState.sections[sectionId]; if (!sec) return;
-      const updatedSec = { ...sec, waiterId }; window.PhantomState.sections[sectionId] = updatedSec;
-      db.get('sections').get(sectionId).put({ ...updatedSec, tables: JSON.stringify(updatedSec.tables || []) });
+      const sec = window.PhantomState.sections[sectionId];
+      if (!sec) return;
+      const updatedSec = { ...sec, waiterId };
+      window.PhantomState.sections[sectionId] = updatedSec;
+      fbSetItem('sections', sectionId, updatedSec);
       if (alsoUpdateActiveTables && Array.isArray(sec.tables)) {
         sec.tables.forEach(tNum => {
-          const k = String(tNum); const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
+          const k = String(tNum);
+          const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
           if (!existing.manualTransfer) {
             const patched = { ...existing, table: k, waiterId, sectionId, updatedAt: Date.now() };
-            window.PhantomState.tables[k] = patched; db.get('tables').get(k).put(patched);
+            window.PhantomState.tables[k] = patched;
+            fbSetItem('tables', k, patched);
           }
         });
       }
-      saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
     transferTableWaiter(tableNum, newWaiterId) {
-      const k = String(tableNum); const prevWaiterId = this.getEffectiveWaiterId(tableNum);
-      const sec = this.getSectionForTable(Number(tableNum)); const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
-      const patched = { ...existing, table: k, waiterId: newWaiterId, sectionId: sec ? sec.id : '', manualTransfer: true, transferredFrom: prevWaiterId, updatedAt: Date.now() };
-      window.PhantomState.tables[k] = patched; db.get('tables').get(k).put(patched);
+      const k = String(tableNum);
+      const prevWaiterId = this.getEffectiveWaiterId(tableNum);
+      const sec = this.getSectionForTable(Number(tableNum));
+      const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
+      const patched = {
+        ...existing,
+        table: k,
+        waiterId: newWaiterId,
+        sectionId: sec ? sec.id : '',
+        manualTransfer: true,
+        transferredFrom: prevWaiterId,
+        updatedAt: Date.now()
+      };
+      window.PhantomState.tables[k] = patched;
+      fbSetItem('tables', k, patched);
       Object.values(window.PhantomState.requests).forEach(r => {
-        if (String(r.table) === k && r.status === 'pending') { r.waiterId = newWaiterId; db.get('requests').get(r.id).put({ waiterId: newWaiterId }); }
+        if (String(r.table) === k && r.status === 'pending') {
+          r.waiterId = newWaiterId;
+          fbPatchItem('requests', r.id, { waiterId: newWaiterId });
+        }
       });
-      saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
-    updateSettings(patch) { Object.assign(window.PhantomState.settings, patch); db.get('settings').put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
-    setWaiter(id, obj) { window.PhantomState.waiters[id] = obj; db.get('waiters').get(id).put(obj); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
+    updateSettings(patch) {
+      Object.assign(window.PhantomState.settings, patch);
+      fbSetSettings(patch);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    setWaiter(id, obj) {
+      window.PhantomState.waiters[id] = obj;
+      fbSetItem('waiters', id, obj);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
     setTable(tableNum, obj) {
-      const k = String(tableNum); const sec = this.getSectionForTable(Number(tableNum)); const defaultW = sec ? sec.waiterId : '';
-      const merged = { ...window.PhantomState.tables[k], ...obj, table: k, waiterId: obj.waiterId || defaultW, sectionId: sec ? sec.id : '', updatedAt: Date.now() };
-      window.PhantomState.tables[k] = merged; db.get('tables').get(k).put(merged); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      const k = String(tableNum);
+      const sec = this.getSectionForTable(Number(tableNum));
+      const defaultW = sec ? sec.waiterId : '';
+      const merged = {
+        ...window.PhantomState.tables[k],
+        ...obj,
+        table: k,
+        waiterId: obj.waiterId || defaultW,
+        sectionId: sec ? sec.id : '',
+        updatedAt: Date.now()
+      };
+      window.PhantomState.tables[k] = merged;
+      fbSetItem('tables', k, merged);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
     addRequest(req) {
-      const assignedW = req.waiterId || this.getEffectiveWaiterId(req.table); const fullReq = { ...req, waiterId: assignedW };
-      window.PhantomState.requests[fullReq.id] = fullReq; db.get('requests').get(fullReq.id).put(fullReq); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      const assignedW = req.waiterId || this.getEffectiveWaiterId(req.table);
+      const fullReq = { ...req, waiterId: assignedW };
+      window.PhantomState.requests[fullReq.id] = fullReq;
+      fbSetItem('requests', fullReq.id, fullReq);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
-    updateRequest(id, patch) { if (window.PhantomState.requests[id]) { Object.assign(window.PhantomState.requests[id], patch); db.get('requests').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } },
-    addGreeting(gr) { window.PhantomState.greetings[gr.id] = gr; db.get('greetings').get(gr.id).put(gr); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
-    updateGreeting(id, patch) { if (window.PhantomState.greetings[id]) { Object.assign(window.PhantomState.greetings[id], patch); db.get('greetings').get(id).put(patch); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } },
+    updateRequest(id, patch) {
+      if (window.PhantomState.requests[id]) {
+        Object.assign(window.PhantomState.requests[id], patch);
+        fbPatchItem('requests', id, patch);
+        saveLocal(true);
+        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      }
+    },
+    addGreeting(gr) {
+      window.PhantomState.greetings[gr.id] = gr;
+      fbSetItem('greetings', gr.id, gr);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    updateGreeting(id, patch) {
+      if (window.PhantomState.greetings[id]) {
+        Object.assign(window.PhantomState.greetings[id], patch);
+        fbPatchItem('greetings', id, patch);
+        saveLocal(true);
+        if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      }
+    },
     resetNight() {
       Object.keys(window.PhantomState.tables).forEach(k => {
         const sec = this.getSectionForTable(Number(k));
-        const closedObj = { table: k, code: '', waiterId: sec ? sec.waiterId : '', sectionId: sec ? sec.id : '', manualTransfer: false, transferredFrom: '', status: 'closed', updatedAt: Date.now() };
-        window.PhantomState.tables[k] = closedObj; db.get('tables').get(k).put(closedObj);
+        const closedObj = {
+          table: k,
+          code: '',
+          waiterId: sec ? sec.waiterId : '',
+          sectionId: sec ? sec.id : '',
+          manualTransfer: false,
+          transferredFrom: '',
+          status: 'closed',
+          updatedAt: Date.now()
+        };
+        window.PhantomState.tables[k] = closedObj;
+        fbSetItem('tables', k, closedObj);
       });
       Object.keys(window.PhantomState.requests).forEach(k => {
-        if (window.PhantomState.requests[k].status === 'pending') { window.PhantomState.requests[k].status = 'expired'; db.get('requests').get(k).put({ status: 'expired' }); }
+        if (window.PhantomState.requests[k].status === 'pending') {
+          window.PhantomState.requests[k].status = 'expired';
+          fbPatchItem('requests', k, { status: 'expired' });
+        }
       });
-      saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
     isClubOpen() {
       const s = window.PhantomState.settings;
-      if (s.forceMode === 'open') return true; if (s.forceMode === 'closed') return false;
-      const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000); const uae = new Date(utc + (3600000 * 4));
+      if (s.forceMode === 'open') return true;
+      if (s.forceMode === 'closed') return false;
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const uae = new Date(utc + (3600000 * 4));
       const mins = uae.getHours() * 60 + uae.getMinutes();
       const openMins = (Number(s.openHour) || 23) * 60 + (Number(s.openMin) || 30);
       const closeMins = (Number(s.closeHour) || 3) * 60 + (Number(s.closeMin) || 20);
-      return openMins > closeMins ? (mins >= openMins || mins < closeMins) : (mins >= openMins && mins < closeMins);
+      if (openMins > closeMins) {
+        return mins >= openMins || mins < closeMins;
+      }
+      return mins >= openMins && mins < closeMins;
     },
     getUAETimeString() {
-      const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000); const uae = new Date(utc + (3600000 * 4));
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const uae = new Date(utc + (3600000 * 4));
       return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     }
   };
+</script>
+
+<script>
   const tTransferSel = document.getElementById('transferTableSelect');
+
   function populateTransferTablesDropdown() {
-    const prev = tTransferSel.value; tTransferSel.innerHTML = '';
+    const prev = tTransferSel.value;
+    tTransferSel.innerHTML = '';
     window.PhantomAPI.getAllTables().forEach(tNum => {
       const sec = window.PhantomAPI.getSectionForTable(tNum);
       tTransferSel.innerHTML += `<option value="${tNum}">طاولة #${tNum} (${sec ? sec.name : ''})</option>`;
     });
     if (prev && tTransferSel.querySelector(`option[value="${prev}"]`)) tTransferSel.value = prev;
   }
+
   function checkLogin() {
-    if (document.getElementById('pinInput').value.trim() === (window.PhantomState.settings.adminPin || '0000')) {
-      document.getElementById('loginBox').style.display = 'none'; document.getElementById('mainApp').style.display = 'block'; window.onPhantomUpdate();
-    } else alert('رمز الإدارة غير صحيح');
+    const val = document.getElementById('pinInput').value.trim();
+    if (val === (window.PhantomState.settings.adminPin || '0000')) {
+      document.getElementById('loginBox').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      window.onPhantomUpdate();
+    } else {
+      alert('رمز الإدارة غير صحيح');
+    }
   }
-  function updateMode() { window.PhantomAPI.updateSettings({ forceMode: document.getElementById('forceModeSelect').value }); }
+
+  function updateMode() {
+    window.PhantomAPI.updateSettings({ forceMode: document.getElementById('forceModeSelect').value });
+  }
+
   function savePins() {
-    const aPin = document.getElementById('newAdminPin').value.trim(); const wPin = document.getElementById('newWaiterPin').value.trim();
-    const patch = {}; if (aPin) patch.adminPin = aPin; if (wPin) patch.waiterPin = wPin;
-    window.PhantomAPI.updateSettings(patch); alert('تم حفظ الرموز بنجاح');
+    const aPin = document.getElementById('newAdminPin').value.trim();
+    const wPin = document.getElementById('newWaiterPin').value.trim();
+    const patch = {};
+    if (aPin) patch.adminPin = aPin;
+    if (wPin) patch.waiterPin = wPin;
+    window.PhantomAPI.updateSettings(patch);
+    alert('تم حفظ الرموز بنجاح');
   }
-  function toggleWaiter(id) { const w = window.PhantomState.waiters[id]; if (w) window.PhantomAPI.setWaiter(id, { ...w, active: !w.active }); }
-  function onSectionWaiterChange(secId, newWaiterId) { window.PhantomAPI.assignSectionWaiter(secId, newWaiterId, true); }
+
+  function toggleWaiter(id) {
+    const w = window.PhantomState.waiters[id];
+    if (w) window.PhantomAPI.setWaiter(id, { ...w, active: !w.active });
+  }
+
+  function onSectionWaiterChange(secId, newWaiterId) {
+    window.PhantomAPI.assignSectionWaiter(secId, newWaiterId, true);
+  }
+
   function rotateSectionsDaily() {
     if (!confirm('سيتم تدوير جميع السكاشن الـ 12 بحيث ينتقل ويتر كل سكشن إلى السكشن التالي لهذا اليوم. هل تريد المتابعة؟')) return;
     const secs = Object.values(window.PhantomState.sections).sort((a,b) => Number(a.num) - Number(b.num));
     if (secs.length < 2) return;
     const currentWaiters = secs.map(s => s.waiterId);
     secs.forEach((sec, idx) => {
-      const nextWaiterId = currentWaiters[(idx - 1 + currentWaiters.length) % currentWaiters.length];
+      const prevIdx = (idx - 1 + currentWaiters.length) % currentWaiters.length;
+      const nextWaiterId = currentWaiters[prevIdx];
       if (Array.isArray(sec.tables)) {
         sec.tables.forEach(tNum => {
-          const k = String(tNum); const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
+          const k = String(tNum);
+          const existing = window.PhantomState.tables[k] || { table: k, status: 'idle' };
           const resetT = { ...existing, waiterId: nextWaiterId, sectionId: sec.id, manualTransfer: false, transferredFrom: '' };
-          window.PhantomState.tables[k] = resetT; db.get('tables').get(k).put(resetT);
+          window.PhantomState.tables[k] = resetT;
         });
       }
-      const updatedSec = { ...sec, waiterId: nextWaiterId }; window.PhantomState.sections[sec.id] = updatedSec;
-      db.get('sections').get(sec.id).put({ ...updatedSec, tables: JSON.stringify(updatedSec.tables || []) });
+      const updatedSec = { ...sec, waiterId: nextWaiterId };
+      window.PhantomState.sections[sec.id] = updatedSec;
     });
-    saveLocal(); window.onPhantomUpdate(); alert('تم تدوير السكاشن الـ 12 بنجاح لليوم الجديد!');
+    saveLocal(true);
+    fbSyncFullState();
+    window.onPhantomUpdate();
+    alert('تم تدوير السكاشن الـ 12 بنجاح لليوم الجديد!');
   }
-  function resetToExactRoster() { if (confirm('استعادة توزيع السكاشن 1 إلى 12 والويترية حسب الجدول الأساسي؟')) { window.PhantomAPI.restoreDefaultRoster(); alert('تمت استعادة التوزيع الأساسي بنجاح.'); } }
+
+  function resetToExactRoster() {
+    if (confirm('استعادة توزيع السكاشن 1 إلى 12 والويترية حسب الجدول الأساسي؟')) {
+      window.PhantomAPI.restoreDefaultRoster();
+      alert('تمت استعادة التوزيع الأساسي بنجاح.');
+    }
+  }
+
   function syncTransferSourcePreview() {
-    const tNum = document.getElementById('transferTableSelect').value; if (!tNum) return;
-    const wId = window.PhantomAPI.getEffectiveWaiterId(tNum); const wName = (window.PhantomState.waiters[wId] || {}).name || 'غير محدد';
+    const tNum = document.getElementById('transferTableSelect').value;
+    if (!tNum) return;
+    const wId = window.PhantomAPI.getEffectiveWaiterId(tNum);
+    const wName = (window.PhantomState.waiters[wId] || {}).name || 'غير محدد';
     const sec = window.PhantomAPI.getSectionForTable(Number(tNum));
     document.getElementById('currentTableWaiterPreview').value = `${wName} (${sec ? sec.name : ''})`;
   }
+
   function executeTableTransfer() {
-    const tNum = document.getElementById('transferTableSelect').value; const targetW = document.getElementById('targetWaiterSelect').value;
-    if (!tNum || !targetW) return; window.PhantomAPI.transferTableWaiter(tNum, targetW); syncTransferSourcePreview(); alert(`تم نقل طاولة #${tNum} بنجاح.`);
+    const tNum = document.getElementById('transferTableSelect').value;
+    const targetW = document.getElementById('targetWaiterSelect').value;
+    if (!tNum || !targetW) return;
+    window.PhantomAPI.transferTableWaiter(tNum, targetW);
+    syncTransferSourcePreview();
+    alert(`تم نقل طاولة #${tNum} بنجاح.`);
   }
-  function confirmReset() { if (confirm('هل أنت متأكد من تصفير الليلة وإغلاق جميع الطاولات والأكواد؟')) window.PhantomAPI.resetNight(); }
+
+  function confirmReset() {
+    if (confirm('هل أنت متأكد من تصفير الليلة وإغلاق جميع الطاولات والأكواد؟')) {
+      window.PhantomAPI.resetNight();
+    }
+  }
+
   window.onPhantomUpdate = function() {
     const s = window.PhantomState.settings;
     document.getElementById('forceModeSelect').value = s.forceMode || 'auto';
     document.getElementById('newAdminPin').value = s.adminPin || '0000';
     document.getElementById('newWaiterPin').value = s.waiterPin || '9999';
+
     populateTransferTablesDropdown();
-    document.getElementById('clubStatusBadge').innerHTML = window.PhantomAPI.isClubOpen()
+
+    const isOpen = window.PhantomAPI.isClubOpen();
+    document.getElementById('clubStatusBadge').innerHTML = isOpen
       ? '<span class="badge" style="background:#16a34a; color:#fff;">مفتوح للزبائن</span>'
       : '<span class="badge" style="background:#dc2626; color:#fff;">مغلق حالياً</span>';
+
     const activeWaiters = Object.values(window.PhantomState.waiters).filter(w => w.active);
-    const targetSel = document.getElementById('targetWaiterSelect'); const prevTarget = targetSel.value; targetSel.innerHTML = '';
-    activeWaiters.forEach(w => { targetSel.innerHTML += `<option value="${w.id}">${w.name}</option>`; });
+
+    const targetSel = document.getElementById('targetWaiterSelect');
+    const prevTarget = targetSel.value;
+    targetSel.innerHTML = '';
+    activeWaiters.forEach(w => {
+      targetSel.innerHTML += `<option value="${w.id}">${w.name}</option>`;
+    });
     if (prevTarget) targetSel.value = prevTarget;
-    const secGrid = document.getElementById('sectionsRosterGrid'); secGrid.innerHTML = '';
+
+    const secGrid = document.getElementById('sectionsRosterGrid');
+    secGrid.innerHTML = '';
     Object.values(window.PhantomState.sections).sort((a,b) => Number(a.num) - Number(b.num)).forEach(sec => {
-      const optionsHtml = activeWaiters.map(w => `<option value="${w.id}" ${sec.waiterId === w.id ? 'selected' : ''}>${w.name}</option>`).join('');
+      const optionsHtml = activeWaiters.map(w =>
+        `<option value="${w.id}" ${sec.waiterId === w.id ? 'selected' : ''}>${w.name}</option>`
+      ).join('');
+
       const chipsHtml = (sec.tables || []).map(tNum => {
         const tObj = window.PhantomState.tables[String(tNum)];
         const isTransferred = Boolean(tObj && tObj.waiterId && tObj.waiterId !== sec.waiterId);
@@ -366,21 +577,58 @@
         const extra = isTransferred ? ` ⇄ ${(window.PhantomState.waiters[tObj.waiterId]||{}).name||''}` : '';
         return `<span class="${cls}">#${tNum}${extra}</span>`;
       }).join('');
-      secGrid.innerHTML += `<div style="background:#0d0d11; border:1px solid #27272f; border-radius:14px; padding:12px;"><div style="font-weight:900; color:#d4af37; font-size:15px; margin-bottom:8px;">${sec.name}</div><div style="margin-bottom:10px;"><label style="font-size:12px; color:#a1a1aa;">الويتر المسؤول عن السكشن اليوم:</label><select onchange="onSectionWaiterChange('${sec.id}', this.value)">${optionsHtml}</select></div><div style="font-size:12px; color:#a1a1aa; margin-bottom:4px;">الطاولات (${(sec.tables||[]).length}):</div><div>${chipsHtml}</div></div>`;
+
+      secGrid.innerHTML += `
+        <div style="background:#0d0d11; border:1px solid #27272f; border-radius:14px; padding:12px;">
+          <div style="font-weight:900; color:#d4af37; font-size:15px; margin-bottom:8px;">${sec.name}</div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:12px; color:#a1a1aa;">الويتر المسؤول عن السكشن اليوم:</label>
+            <select onchange="onSectionWaiterChange('${sec.id}', this.value)">${optionsHtml}</select>
+          </div>
+          <div style="font-size:12px; color:#a1a1aa; margin-bottom:4px;">الطاولات (${(sec.tables||[]).length}):</div>
+          <div>${chipsHtml}</div>
+        </div>`;
     });
+
     syncTransferSourcePreview();
-    const wList = document.getElementById('waitersList'); wList.innerHTML = '';
+
+    const wList = document.getElementById('waitersList');
+    wList.innerHTML = '';
     Object.values(window.PhantomState.waiters).forEach(w => {
       const wTables = window.PhantomAPI.getTablesForWaiter(w.id).map(x => '#' + x.table).join('، ');
-      wList.innerHTML += `<div style="background:#0d0d11; padding:10px; border-radius:10px; border:1px solid #27272f;"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong style="color:#d4af37;">${w.name}</strong><span style="font-size:12px; color:${w.active ? '#22c55e' : '#ef4444'}; margin-right:6px;">(${w.active ? 'نشط' : 'موقوف'})</span></div><button class="btn btn-dark" style="padding:5px 10px; font-size:12px;" onclick="toggleWaiter('${w.id}')">${w.active ? 'إيقاف' : 'تفعيل'}</button></div><div style="font-size:12px; color:#a1a1aa; margin-top:4px;">طاولاته: <span style="color:#fff;">${wTables || 'لا يوجد'}</span></div></div>`;
+      wList.innerHTML += `
+        <div style="background:#0d0d11; padding:10px; border-radius:10px; border:1px solid #27272f;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong style="color:#d4af37;">${w.name}</strong>
+              <span style="font-size:12px; color:${w.active ? '#22c55e' : '#ef4444'}; margin-right:6px;">(${w.active ? 'نشط' : 'موقوف'})</span>
+            </div>
+            <button class="btn btn-dark" style="padding:5px 10px; font-size:12px;" onclick="toggleWaiter('${w.id}')">${w.active ? 'إيقاف' : 'تفعيل'}</button>
+          </div>
+          <div style="font-size:12px; color:#a1a1aa; margin-top:4px;">طاولاته: <span style="color:#fff;">${wTables || 'لا يوجد'}</span></div>
+        </div>`;
     });
-    const rList = document.getElementById('liveRequestsList'); rList.innerHTML = '';
-    Object.values(window.PhantomState.requests).sort((a,b) => b.createdAt - a.createdAt).forEach(r => {
+
+    const rList = document.getElementById('liveRequestsList');
+    rList.innerHTML = '';
+    const reqs = Object.values(window.PhantomState.requests).sort((a,b) => b.createdAt - a.createdAt);
+    reqs.forEach(r => {
       const wName = (window.PhantomState.waiters[r.waiterId] || {}).name || r.waiterId;
       const sec = window.PhantomAPI.getSectionForTable(Number(r.table));
-      rList.innerHTML += `<div style="background:#0d0d11; padding:10px; border-radius:10px; border-right:4px solid ${r.status === 'pending' ? '#ef4444' : '#22c55e'};"><div style="display:flex; justify-content:space-between; font-size:13px;"><strong>طاولة #${r.table} (${sec ? sec.name : ''}) → ${wName}</strong><span style="color:#a1a1aa;">${r.timeStr || ''}</span></div><div style="font-size:14px; margin-top:4px;">${r.type === 'call' ? '🔔 استدعاء ويتر' : r.type === 'greeting' ? '✨ تحية: ' + r.text : '🍾 طلب: ' + r.text}</div></div>`;
+      rList.innerHTML += `
+        <div style="background:#0d0d11; padding:10px; border-radius:10px; border-right:4px solid ${r.status === 'pending' ? '#ef4444' : '#22c55e'};">
+          <div style="display:flex; justify-content:space-between; font-size:13px;">
+            <strong>طاولة #${r.table} (${sec ? sec.name : ''}) → ${wName}</strong>
+            <span style="color:#a1a1aa;">${r.timeStr || ''}</span>
+          </div>
+          <div style="font-size:14px; margin-top:4px;">${r.type === 'call' ? '🔔 استدعاء ويتر' : r.type === 'greeting' ? '✨ تحية: ' + r.text : '🍾 طلب: ' + r.text}</div>
+        </div>`;
     });
   };
-  setInterval(() => { const el = document.getElementById('uaeClock'); if (el) el.innerText = window.PhantomAPI.getUAETimeString(); }, 1000);
+
+  setInterval(() => {
+    const el = document.getElementById('uaeClock');
+    if (el) el.innerText = window.PhantomAPI.getUAETimeString();
+  }, 1000);
 </script>
 </body></html>
