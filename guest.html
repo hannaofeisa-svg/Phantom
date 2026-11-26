@@ -15,69 +15,102 @@
   .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
-  .btn-danger { background: #dc2626; color: #fff; }
-  .btn-success { background: #16a34a; color: #fff; }
-  .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
   input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
   input:focus, select:focus, textarea:focus { border-color: #d4af37; }
-  .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-  .table-chip { display:inline-block; background:#1e1e26; border:1px solid #343442; color:#f4f4f5; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:700; margin:2px; }
-  .table-chip.active-table { border-color:#d4af37; color:#d4af37; background:#241f10; }
-  .table-chip.transferred { border-color:#38bdf8; color:#38bdf8; background:#0c2230; }
+  .en-sub { display: block; font-size: 12px; color: #a1a1aa; font-weight: 600; direction: ltr; }
 </style>
-<title>Phantom Club | خدمة الطاولات</title></head><body>
-<div style="max-width:460px; margin:0 auto; padding:16px; min-height:100vh; display:flex; flex-direction:column; justify-content:center;">
+<title>Phantom Club | خدمة الطاولات • Table Service</title>
+</head>
+<body>
+<div style="max-width:480px; margin:0 auto; padding:16px; min-height:100vh; display:flex; flex-direction:column; justify-content:center;">
+
+  <!-- شاشة إغلاق الخدمة -->
   <div id="closedScreen" class="card" style="display:none; text-align:center; padding:32px 20px; border-color:#dc2626;">
     <div style="font-size:48px; margin-bottom:10px;">🔒</div>
-    <h2 style="color:#ef4444; margin:0 0 8px;">الخدمة مغلقة حالياً</h2>
-    <p style="color:#a1a1aa; line-height:1.6;">تعمل خدمة طلبات الطاولات في <strong>Phantom Club</strong> يومياً من الساعة <strong>11:30 ليلاً</strong> وحتى <strong>3:20 صباحاً</strong>.</p>
-    <div style="margin-top:14px; font-size:13px; color:#71717a;">الوقت الحالي في الإمارات: <span id="guestClock"></span></div>
+    <h2 style="color:#ef4444; margin:0 0 8px;">الخدمة مغلقة حالياً • Service Closed</h2>
+    <p style="color:#e4e4e7; line-height:1.6; margin-bottom:8px;">
+      تعمل خدمة طلبات الطاولات في <strong>Phantom Club</strong> يومياً من الساعة <strong>11:30 ليلاً</strong> وحتى <strong>3:20 صباحاً</strong>، ويُطلب كود جديد لكل ليلة.
+    </p>
+    <p dir="ltr" style="color:#a1a1aa; font-size:13px; line-height:1.6; margin-top:0;">
+      Table service at <strong>Phantom Club</strong> operates daily from <strong>11:30 PM</strong> to <strong>3:20 AM</strong> (UAE Time). A new table code is required each night.
+    </p>
+    <div style="margin-top:14px; font-size:13px; color:#71717a;">
+      توقيت الإمارات • UAE Time: <span id="guestClock" style="color:#fff;"></span>
+    </div>
   </div>
 
+  <!-- شاشة إدخال رقم الطاولة والكود -->
   <div id="authScreen" class="card" style="display:none; text-align:center;">
     <h1 class="gold" style="margin:0 0 4px; letter-spacing:2px;">PHANTOM CLUB</h1>
-    <p style="color:#a1a1aa; margin:0 0 20px; font-size:14px;">أهلاً بك — أدخل رقم طاولتك وكود الدخول الخاص بك</p>
-    <div style="text-align:right; margin-bottom:12px;">
-      <label style="font-size:13px; color:#a1a1aa;">رقم الطاولة</label>
-      <input type="number" id="guestTableInput" placeholder="مثال: 12" min="1" max="100" style="text-align:center; font-size:20px; font-weight:700;">
+    <p style="color:#e4e4e7; margin:0 0 4px; font-size:14px;">أهلاً بك — أدخل رقم طاولتك وكود الدخول</p>
+    <p dir="ltr" style="color:#a1a1aa; margin:0 0 20px; font-size:13px;">Welcome — Enter your table number &amp; access code</p>
+
+    <div style="text-align:right; margin-bottom:14px;">
+      <label style="font-size:13px; color:#e4e4e7; font-weight:700;">
+        رقم الطاولة • Table Number
+      </label>
+      <input type="number" id="guestTableInput" placeholder="مثال / e.g. 12" min="1" max="200" style="text-align:center; font-size:20px; font-weight:700; margin-top:4px;">
     </div>
+
     <div style="text-align:right; margin-bottom:18px;">
-      <label style="font-size:13px; color:#a1a1aa;">كود الطاولة (من موظف الاستقبال)</label>
-      <input type="tel" id="guestCodeInput" placeholder="****" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:900;">
+      <label style="font-size:13px; color:#e4e4e7; font-weight:700;">
+        كود الطاولة (من موظف الاستقبال) • Table Code (From Reception)
+      </label>
+      <input type="tel" id="guestCodeInput" placeholder="****" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:900; margin-top:4px;">
     </div>
-    <button class="btn btn-primary" style="width:100%; font-size:17px; padding:14px;" onclick="verifyGuest()">دخول الطاولة</button>
+
+    <button class="btn btn-primary" style="width:100%; font-size:16px; padding:14px;" onclick="verifyGuest()">
+      دخول الطاولة • Enter Table
+    </button>
   </div>
 
+  <!-- شاشة الخدمات للزبون -->
   <div id="serviceScreen" style="display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #27272f; padding-bottom:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:16px; border-bottom:1px solid #27272f; padding-bottom:12px;">
       <div>
         <h2 class="gold" style="margin:0; font-size:20px;">PHANTOM CLUB</h2>
-        <div style="font-size:13px; color:#a1a1aa;">طاولة رقم <strong id="activeTableNum" style="color:#fff;"></strong> • الويتر: <strong id="activeWaiterName" style="color:#d4af37;"></strong></div>
+        <div style="font-size:13px; color:#e4e4e7;">
+          طاولة رقم / Table #<strong id="activeTableNum" style="color:#fff;"></strong>
+        </div>
+        <div style="font-size:12px; color:#a1a1aa;">
+          الويتر / Waiter: <strong id="activeWaiterName" style="color:#d4af37;"></strong>
+        </div>
       </div>
-      <button class="btn btn-dark" style="padding:6px 10px; font-size:12px;" onclick="logoutGuest()">خروج</button>
+      <button class="btn btn-dark" style="padding:7px 12px; font-size:12px;" onclick="logoutGuest()">خروج • Exit</button>
     </div>
 
+    <!-- استدعاء الويتر -->
     <div class="card" style="text-align:center; margin-bottom:14px; border-color:#d4af37;">
-      <button class="btn btn-primary" style="width:100%; padding:20px; font-size:20px; border-radius:16px;" onclick="sendCallWaiter()">
-        🔔 استدعاء الويتر الآن
+      <button class="btn btn-primary" style="width:100%; padding:18px; font-size:18px; border-radius:16px; flex-direction:column; gap:2px;" onclick="sendCallWaiter()">
+        <span>🔔 استدعاء الويتر الآن</span>
+        <span style="font-size:14px; font-weight:800;">Call Waiter Now</span>
       </button>
-      <div style="font-size:12px; color:#a1a1aa; margin-top:8px;">سيصل تنبيه فوري للويتر المسؤول عن طاولتك</div>
+      <div style="font-size:12px; color:#a1a1aa; margin-top:8px;">
+        سيصل تنبيه فوري للويتر المسؤول عن طاولتك<br>
+        <span dir="ltr">An instant alert will be sent to your table's waiter</span>
+      </div>
     </div>
 
+    <!-- إرسال طلب -->
     <div class="card" style="margin-bottom:14px;">
-      <h3 style="margin:0 0 10px; font-size:16px; color:#d4af37;">🍾 إرسال طلب محدد</h3>
-      <textarea id="orderText" rows="2" placeholder="اكتب طلبك هنا (مثال: ثلج إضافي، مشروب، حساب...)"></textarea>
-      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#d4af37; color:#d4af37;" onclick="sendOrder()">إرسال الطلب للويتر</button>
+      <h3 style="margin:0 0 8px; font-size:15px; color:#d4af37;">🍾 إرسال طلب محدد • Send a Specific Order</h3>
+      <textarea id="orderText" rows="2" placeholder="اكتب طلبك هنا (ثلج، مشروب، حساب...) / Type your order here (Ice, Drink, Bill...)"></textarea>
+      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#d4af37; color:#d4af37;" onclick="sendOrder()">
+        إرسال الطلب للويتر • Send Order to Waiter
+      </button>
     </div>
 
+    <!-- إرسال تحية -->
     <div class="card">
-      <h3 style="margin:0 0 10px; font-size:16px; color:#38bdf8;">✨ إرسال تحية للشاشات</h3>
-      <textarea id="greetingText" rows="2" placeholder="اكتب نص التحية لعرضها على شاشات النادي..."></textarea>
-      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#38bdf8; color:#38bdf8;" onclick="sendGreeting()">إرسال التحية</button>
+      <h3 style="margin:0 0 8px; font-size:15px; color:#38bdf8;">✨ إرسال تحية للشاشات • Send Greeting to Screens</h3>
+      <textarea id="greetingText" rows="2" placeholder="اكتب نص التحية لعرضها على شاشات النادي / Write your greeting for the club screens..."></textarea>
+      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#38bdf8; color:#38bdf8;" onclick="sendGreeting()">
+        إرسال التحية • Send Greeting
+      </button>
     </div>
 
-    <div id="toastMsg" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:12px 24px; border-radius:999px; font-weight:700; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:99;"></div>
+    <div id="toastMsg" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:12px 22px; border-radius:999px; font-weight:700; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:99; max-width:92%;"></div>
   </div>
 </div>
 
@@ -96,53 +129,47 @@
   const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
 
-  const ROSTER_WAITERS = {
-    'W1': { id: 'W1', name: 'Amira', active: true },
-    'W2': { id: 'W2', name: 'Hussen', active: true },
-    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
-    'W4': { id: 'W4', name: 'Vina', active: true },
-    'W5': { id: 'W5', name: 'Nada', active: true },
-    'W6': { id: 'W6', name: 'Samara', active: true },
-    'W7': { id: 'W7', name: 'Adel', active: true },
-    'W8': { id: 'W8', name: 'Makdeis', active: true },
-    'W9': { id: 'W9', name: 'Haidar', active: true },
-    'W10': { id: 'W10', name: 'Rita', active: true },
-    'W11': { id: 'W11', name: 'Somar', active: true },
-    'W12': { id: 'W12', name: 'Karim', active: true }
-  };
-  const ROSTER_SECTIONS = {
-    'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
-    'S02': { id: 'S02', num: 2, name: 'Section 2', tables: [2,3], waiterId: 'W2' },
-    'S03': { id: 'S03', num: 3, name: 'Section 3', tables: [4,5,6], waiterId: 'W3' },
-    'S04': { id: 'S04', num: 4, name: 'Section 4', tables: [11,21,31,41], waiterId: 'W4' },
-    'S05': { id: 'S05', num: 5, name: 'Section 5', tables: [12,22,32,42], waiterId: 'W5' },
-    'S06': { id: 'S06', num: 6, name: 'Section 6', tables: [14,23,33,43], waiterId: 'W6' },
-    'S07': { id: 'S07', num: 7, name: 'Section 7', tables: [15,24,34,44], waiterId: 'W7' },
-    'S08': { id: 'S08', num: 8, name: 'Section 8', tables: [16,25,35,45], waiterId: 'W8' },
-    'S09': { id: 'S09', num: 9, name: 'Section 9', tables: [26,36,46,47], waiterId: 'W9' },
-    'S10': { id: 'S10', num: 10, name: 'Section 10', tables: [91,92,93], waiterId: 'W10' },
-    'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
-    'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
-  };
+  function getUAEDateObj() {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 4));
+  }
 
-  function getAllConfiguredTables() {
-    const set = new Set();
-    Object.values(window.PhantomState.sections || {}).forEach(sec => {
-      (sec.tables || []).forEach(t => set.add(Number(t)));
-    });
-    return [...set].sort((a,b) => a - b);
+  function getCurrentNightKey() {
+    const uae = getUAEDateObj();
+    const mins = uae.getHours() * 60 + uae.getMinutes();
+    const shift = new Date(uae.getTime());
+    if (mins < 210) shift.setDate(shift.getDate() - 1);
+    const y = shift.getFullYear();
+    const m = String(shift.getMonth() + 1).padStart(2, '0');
+    const d = String(shift.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function isTableCodeExpired(tObj) {
+    if (!tObj || tObj.status !== 'active' || !tObj.code) return true;
+    const currentNight = getCurrentNightKey();
+    if (tObj.nightKey && tObj.nightKey !== currentNight) return true;
+    const uae = getUAEDateObj();
+    const mins = uae.getHours() * 60 + uae.getMinutes();
+    const cutoffMins = 3 * 60 + 20;
+    const openMins = 23 * 60 + 30;
+    if (mins >= cutoffMins && mins < openMins) return true;
+    if (tObj.createdAt) {
+      const createdUae = new Date(tObj.createdAt + (3600000 * 4));
+      const cMins = createdUae.getHours() * 60 + createdUae.getMinutes();
+      const cNight = tObj.nightKey || '';
+      if (cNight === currentNight && cMins >= openMins && mins >= cutoffMins && mins < openMins) {
+        return true;
+      }
+    }
+    return false;
   }
 
   window.PhantomState = {
-    settings: {
-      openHour: 23, openMin: 30,
-      closeHour: 3, closeMin: 20,
-      forceMode: 'auto',
-      adminPin: '0000',
-      waiterPin: '9999'
-    },
-    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
-    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto' },
+    waiters: {},
+    sections: {},
     tables: {},
     requests: {},
     greetings: {}
@@ -151,8 +178,8 @@
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
     if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
-    if (cached.waiters && Object.keys(cached.waiters).length > 0) window.PhantomState.waiters = cached.waiters;
-    if (cached.sections && Object.keys(cached.sections).length > 0) window.PhantomState.sections = cached.sections;
+    if (cached.waiters) window.PhantomState.waiters = cached.waiters;
+    if (cached.sections) window.PhantomState.sections = cached.sections;
     if (cached.tables) window.PhantomState.tables = cached.tables;
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
@@ -160,9 +187,7 @@
 
   function saveLocal(broadcast = true) {
     localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
-    if (broadcast) {
-      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
-    }
+    if (broadcast) bc.postMessage({ type: 'SYNC', state: window.PhantomState });
   }
 
   function fbSetItem(col, key, val) { fbRoomRef.child(col).child(String(key)).set(val); }
@@ -178,19 +203,8 @@
     const remote = snap.val();
     if (!remote || typeof remote !== 'object') return;
     if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
-    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
-    if (remote.sections && Object.keys(remote.sections).length > 0) {
-      const normalized = {};
-      Object.entries(remote.sections).forEach(([k, sec]) => {
-        if (!sec) return;
-        let tbls = sec.tables;
-        if (typeof tbls === 'string') {
-          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
-        }
-        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
-      });
-      window.PhantomState.sections = normalized;
-    }
+    if (remote.waiters) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections) window.PhantomState.sections = remote.sections;
     window.PhantomState.tables = remote.tables || {};
     window.PhantomState.requests = remote.requests || {};
     window.PhantomState.greetings = remote.greetings || {};
@@ -201,7 +215,7 @@
   window.PhantomAPI = {
     getSectionForTable(tableNum) {
       const num = Number(tableNum);
-      for (const sec of Object.values(window.PhantomState.sections)) {
+      for (const sec of Object.values(window.PhantomState.sections || {})) {
         const arr = Array.isArray(sec.tables) ? sec.tables.map(Number) : [];
         if (arr.includes(num)) return sec;
       }
@@ -222,32 +236,19 @@
       saveLocal(true);
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     },
-    addGreeting(gr) {
-      window.PhantomState.greetings[gr.id] = gr;
-      fbSetItem('greetings', gr.id, gr);
-      saveLocal(true);
-      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
-    },
     isClubOpen() {
       const s = window.PhantomState.settings;
       if (s.forceMode === 'open') return true;
       if (s.forceMode === 'closed') return false;
-      const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const uae = new Date(utc + (3600000 * 4));
+      const uae = getUAEDateObj();
       const mins = uae.getHours() * 60 + uae.getMinutes();
       const openMins = (Number(s.openHour) || 23) * 60 + (Number(s.openMin) || 30);
       const closeMins = (Number(s.closeHour) || 3) * 60 + (Number(s.closeMin) || 20);
-      if (openMins > closeMins) {
-        return mins >= openMins || mins < closeMins;
-      }
+      if (openMins > closeMins) return mins >= openMins || mins < closeMins;
       return mins >= openMins && mins < closeMins;
     },
     getUAETimeString() {
-      const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const uae = new Date(utc + (3600000 * 4));
-      return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      return getUAEDateObj().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     }
   };
 </script>
@@ -259,7 +260,7 @@
     const t = document.getElementById('toastMsg');
     t.innerText = msg;
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 3000);
+    setTimeout(() => { t.style.display = 'none'; }, 3200);
   }
 
   function verifyGuest() {
@@ -267,8 +268,27 @@
     const code = document.getElementById('guestCodeInput').value.trim();
     const tObj = window.PhantomState.tables[table];
     if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== code) {
-      return alert('رقم الطاولة أو الكود غير صحيح، يرجى التأكد من موظف الاستقبال.');
+      return alert('رقم الطاولة أو الكود غير صحيح، يرجى التأكد من موظف الاستقبال.\nInvalid table number or access code. Please check with reception.');
     }
+    if (isTableCodeExpired(tObj)) {
+      return alert('انتهت صلاحية هذا الكود بعد انتهاء الليلة السابقة، يلزم تفعيل الطاولة وتوليد كود جديد لليوم.\nThis code has expired after last night\'s session. A new code is required for tonight.');
+    }
+
+    const alreadyNotified = sessionStorage.getItem(`phantom_table_activated_notified_${table}_${code}`);
+    if (!alreadyNotified) {
+      sessionStorage.setItem(`phantom_table_activated_notified_${table}_${code}`, '1');
+      window.PhantomAPI.addRequest({
+        id: 'ACT_' + Date.now() + '_' + table,
+        table: String(table),
+        waiterId: window.PhantomAPI.getEffectiveWaiterId(table),
+        type: 'table_activated',
+        text: 'قام الزبون بتفعيل الطاولة وإدخال الكود • Guest Activated Table with Code',
+        status: 'pending',
+        createdAt: Date.now(),
+        timeStr: window.PhantomAPI.getUAETimeString()
+      });
+    }
+
     session = { table, code };
     sessionStorage.setItem('phantom_guest_session', JSON.stringify(session));
     renderGuestView();
@@ -283,7 +303,7 @@
   function getActiveTableObj() {
     if (!session) return null;
     const tObj = window.PhantomState.tables[session.table];
-    if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== session.code) {
+    if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== session.code || isTableCodeExpired(tObj)) {
       logoutGuest();
       return null;
     }
@@ -293,48 +313,43 @@
   function sendCallWaiter() {
     const tObj = getActiveTableObj();
     if (!tObj) return;
-    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
     window.PhantomAPI.addRequest({
-      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: effectiveWaiter,
-      type: 'call', text: 'استدعاء ويتر عاجل',
+      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: window.PhantomAPI.getEffectiveWaiterId(tObj.table),
+      type: 'call', text: 'استدعاء ويتر عاجل • Urgent Waiter Call',
       status: 'pending', createdAt: Date.now(),
       timeStr: window.PhantomAPI.getUAETimeString()
     });
-    showToast('✅ تم استدعاء الويتر بنجاح!');
+    showToast('✅ تم استدعاء الويتر بنجاح! • Waiter Called!');
   }
 
   function sendOrder() {
     const tObj = getActiveTableObj();
     if (!tObj) return;
     const text = document.getElementById('orderText').value.trim();
-    if (!text) return alert('يرجى كتابة الطلب أولاً');
-    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
+    if (!text) return alert('يرجى كتابة الطلب أولاً • Please write your order first');
     window.PhantomAPI.addRequest({
-      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: effectiveWaiter,
+      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: window.PhantomAPI.getEffectiveWaiterId(tObj.table),
       type: 'order', text,
       status: 'pending', createdAt: Date.now(),
       timeStr: window.PhantomAPI.getUAETimeString()
     });
     document.getElementById('orderText').value = '';
-    showToast('✅ تم إرسال طلبك للويتر!');
+    showToast('✅ تم إرسال طلبك للويتر! • Order Sent to Waiter!');
   }
 
   function sendGreeting() {
     const tObj = getActiveTableObj();
     if (!tObj) return;
     const text = document.getElementById('greetingText').value.trim();
-    if (!text) return alert('يرجى كتابة نص التحية أولاً');
-    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
-    const nowId = 'REQ_' + Date.now();
-    const timeStr = window.PhantomAPI.getUAETimeString();
+    if (!text) return alert('يرجى كتابة نص التحية أولاً • Please write your greeting first');
     window.PhantomAPI.addRequest({
-      id: nowId, table: tObj.table, waiterId: effectiveWaiter,
+      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: window.PhantomAPI.getEffectiveWaiterId(tObj.table),
       type: 'greeting', text,
       status: 'pending', createdAt: Date.now(),
-      timeStr
+      timeStr: window.PhantomAPI.getUAETimeString()
     });
     document.getElementById('greetingText').value = '';
-    showToast('✨ تم إرسال التحية للمراجعة والعرض!');
+    showToast('✨ تم إرسال التحية للمراجعة والعرض! • Greeting Sent!');
   }
 
   function renderGuestView() {
@@ -375,4 +390,5 @@
   }, 1000);
   renderGuestView();
 </script>
-</body></html>
+</body>
+</html>
