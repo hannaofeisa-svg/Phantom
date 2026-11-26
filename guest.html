@@ -15,64 +15,100 @@
   .btn { border: none; border-radius: 12px; padding: 11px 16px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .btn:active { transform: scale(0.97); }
   .btn-primary { background: linear-gradient(135deg, #d4af37, #b38b22); color: #09090b; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-success { background: #16a34a; color: #fff; }
+  .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
   input, select, textarea { width: 100%; background: #0d0d11; border: 1px solid #2e2e38; color: #fff; padding: 11px 12px; border-radius: 12px; font-size: 15px; outline: none; }
   input:focus, select:focus, textarea:focus { border-color: #d4af37; }
-  .pill { display:inline-block; padding:5px 12px; border-radius:999px; background:#1e1e26; border:1px solid #32323e; font-size:13px; cursor:pointer; margin:3px; }
-  .pill:hover { border-color:#d4af37; color:#d4af37; }
+  .badge { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .table-chip { display:inline-block; background:#1e1e26; border:1px solid #343442; color:#f4f4f5; padding:3px 8px; border-radius:8px; font-size:12px; font-weight:700; margin:2px; }
+  .table-chip.active-table { border-color:#d4af37; color:#d4af37; background:#241f10; }
+  .table-chip.transferred { border-color:#38bdf8; color:#38bdf8; background:#0c2230; }
 </style>
-<title>Phantom Club | خدمة الطاولة</title></head><body>
-<div id="closedScreen" style="display:none; max-width:440px; margin:70px auto; padding:20px; text-align:center;">
-  <div class="card"><h1 class="gold" style="margin-top:0;">PHANTOM CLUB</h1><p style="font-size:16px; line-height:1.7;">عذراً، الخدمة متاحة خلال أوقات عمل النادي فقط (11:30 مساءً – 3:20 صباحاً بتوقيت الإمارات).</p></div>
-</div>
-<div id="loginScreen" style="max-width:420px; margin:40px auto; padding:18px;">
-  <div class="card" style="text-align:center;">
-    <h1 class="gold" style="margin:0 0 6px;">PHANTOM CLUB</h1><p style="color:#a1a1aa; margin:0 0 18px; font-size:14px;">أدخل رقم الطاولة وكود التفعيل من الكاونتر</p>
-    <div style="text-align:right; margin-bottom:12px;"><label style="font-size:13px; color:#a1a1aa;">رقم الطاولة</label><select id="guestTableSelect"></select></div>
-    <div style="text-align:right; margin-bottom:16px;"><label style="font-size:13px; color:#a1a1aa;">كود الطاولة (4 أرقام)</label><input type="tel" id="guestCodeInput" maxlength="4" placeholder="----" style="text-align:center; font-size:22px; letter-spacing:8px;"></div>
-    <button class="btn btn-primary" style="width:100%;" onclick="verifyGuest()">دخول إلى الطاولة</button>
-    <div id="loginError" style="color:#ef4444; font-size:13px; margin-top:10px;"></div>
+<title>Phantom Club | خدمة الطاولات</title></head><body>
+<div style="max-width:460px; margin:0 auto; padding:16px; min-height:100vh; display:flex; flex-direction:column; justify-content:center;">
+  <div id="closedScreen" class="card" style="display:none; text-align:center; padding:32px 20px; border-color:#dc2626;">
+    <div style="font-size:48px; margin-bottom:10px;">🔒</div>
+    <h2 style="color:#ef4444; margin:0 0 8px;">الخدمة مغلقة حالياً</h2>
+    <p style="color:#a1a1aa; line-height:1.6;">تعمل خدمة طلبات الطاولات في <strong>Phantom Club</strong> يومياً من الساعة <strong>11:30 ليلاً</strong> وحتى <strong>3:20 صباحاً</strong>.</p>
+    <div style="margin-top:14px; font-size:13px; color:#71717a;">الوقت الحالي في الإمارات: <span id="guestClock"></span></div>
   </div>
-</div>
-<div id="guestApp" style="display:none; max-width:520px; margin:0 auto; padding:16px;">
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-    <div><h2 class="gold" style="margin:0;">طاولة #<span id="activeTableNum"></span></h2><div style="font-size:13px; color:#a1a1aa;">الويتر المسؤول: <strong id="activeWaiterName" style="color:#fff;"></strong></div></div>
-    <button class="btn btn-dark" style="padding:7px 12px; font-size:12px;" onclick="logoutGuest()">تغيير الطاولة</button>
-  </div>
-  <div class="card" style="text-align:center; margin-bottom:14px;">
-    <button class="btn btn-primary" style="width:100%; padding:14px; font-size:16px;" onclick="sendCallWaiter()">🔔 استدعاء الويتر إلى الطاولة</button>
-    <div id="callFeedback" style="font-size:13px; color:#22c55e; margin-top:8px;"></div>
-  </div>
-  <div class="card" style="margin-bottom:14px;">
-    <h3 style="margin:0 0 8px; color:#d4af37; font-size:16px;">🍾 طلب إضافي / خدمة سريعة</h3>
-    <div style="margin-bottom:10px;">
-      <span class="pill" onclick="fillOrder('ثلج إضافي')">ثلج إضافي</span><span class="pill" onclick="fillOrder('كؤوس إضافية')">كؤوس إضافية</span>
-      <span class="pill" onclick="fillOrder('مياه')">مياه</span><span class="pill" onclick="fillOrder('تنظيف الطاولة')">تنظيف الطاولة</span><span class="pill" onclick="fillOrder('طلب الفاتورة')">طلب الفاتورة</span>
+
+  <div id="authScreen" class="card" style="display:none; text-align:center;">
+    <h1 class="gold" style="margin:0 0 4px; letter-spacing:2px;">PHANTOM CLUB</h1>
+    <p style="color:#a1a1aa; margin:0 0 20px; font-size:14px;">أهلاً بك — أدخل رقم طاولتك وكود الدخول الخاص بك</p>
+    <div style="text-align:right; margin-bottom:12px;">
+      <label style="font-size:13px; color:#a1a1aa;">رقم الطاولة</label>
+      <input type="number" id="guestTableInput" placeholder="مثال: 12" min="1" max="100" style="text-align:center; font-size:20px; font-weight:700;">
     </div>
-    <div style="display:flex; gap:8px;"><input type="text" id="orderInput" placeholder="اكتب طلبك هنا..."><button class="btn btn-primary" onclick="sendOrder()">إرسال</button></div>
-    <div id="orderFeedback" style="font-size:13px; color:#22c55e; margin-top:8px;"></div>
+    <div style="text-align:right; margin-bottom:18px;">
+      <label style="font-size:13px; color:#a1a1aa;">كود الطاولة (من موظف الاستقبال)</label>
+      <input type="tel" id="guestCodeInput" placeholder="****" maxlength="4" style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:900;">
+    </div>
+    <button class="btn btn-primary" style="width:100%; font-size:17px; padding:14px;" onclick="verifyGuest()">دخول الطاولة</button>
   </div>
-  <div class="card" style="margin-bottom:14px;">
-    <h3 style="margin:0 0 8px; color:#d4af37; font-size:16px;">✨ إرسال تحية أو تهنئة على الشاشة</h3>
-    <input type="text" id="greetingInput" maxlength="90" placeholder="مثال: Happy Birthday Sarah 🎉 أو مبروك..." style="margin-bottom:8px;">
-    <button class="btn btn-primary" style="width:100%;" onclick="sendGreeting()">إرسال التحية للشاشة</button>
-    <div id="greetingFeedback" style="font-size:13px; color:#22c55e; margin-top:8px;"></div>
+
+  <div id="serviceScreen" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid #27272f; padding-bottom:12px;">
+      <div>
+        <h2 class="gold" style="margin:0; font-size:20px;">PHANTOM CLUB</h2>
+        <div style="font-size:13px; color:#a1a1aa;">طاولة رقم <strong id="activeTableNum" style="color:#fff;"></strong> • الويتر: <strong id="activeWaiterName" style="color:#d4af37;"></strong></div>
+      </div>
+      <button class="btn btn-dark" style="padding:6px 10px; font-size:12px;" onclick="logoutGuest()">خروج</button>
+    </div>
+
+    <div class="card" style="text-align:center; margin-bottom:14px; border-color:#d4af37;">
+      <button class="btn btn-primary" style="width:100%; padding:20px; font-size:20px; border-radius:16px;" onclick="sendCallWaiter()">
+        🔔 استدعاء الويتر الآن
+      </button>
+      <div style="font-size:12px; color:#a1a1aa; margin-top:8px;">سيصل تنبيه فوري للويتر المسؤول عن طاولتك</div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px;">
+      <h3 style="margin:0 0 10px; font-size:16px; color:#d4af37;">🍾 إرسال طلب محدد</h3>
+      <textarea id="orderText" rows="2" placeholder="اكتب طلبك هنا (مثال: ثلج إضافي، مشروب، حساب...)"></textarea>
+      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#d4af37; color:#d4af37;" onclick="sendOrder()">إرسال الطلب للويتر</button>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px; font-size:16px; color:#38bdf8;">✨ إرسال تحية للشاشات</h3>
+      <textarea id="greetingText" rows="2" placeholder="اكتب نص التحية لعرضها على شاشات النادي..."></textarea>
+      <button class="btn btn-dark" style="width:100%; margin-top:10px; border-color:#38bdf8; color:#38bdf8;" onclick="sendGreeting()">إرسال التحية</button>
+    </div>
+
+    <div id="toastMsg" style="display:none; position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:12px 24px; border-radius:999px; font-weight:700; box-shadow:0 10px 25px rgba(0,0,0,0.5); z-index:99;"></div>
   </div>
-  <div class="card"><h3 style="margin:0 0 8px; font-size:15px; color:#a1a1aa;">حالة طلباتك الأخيرة</h3><div id="myRequestsBox" style="display:flex; flex-direction:column; gap:8px;"></div></div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
-  const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
-  const db = gun.get(PHANTOM_ROOM);
+  const FIREBASE_CONFIG = {
+    databaseURL: 'https://phantom-e79ca-default-rtdb.firebaseio.com'
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  const fbDb = firebase.database();
+  const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
+
   const ROSTER_WAITERS = {
-    'W1': { id: 'W1', name: 'Amira', active: true }, 'W2': { id: 'W2', name: 'Hussen', active: true },
-    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true }, 'W4': { id: 'W4', name: 'Vina', active: true },
-    'W5': { id: 'W5', name: 'Nada', active: true }, 'W6': { id: 'W6', name: 'Samara', active: true },
-    'W7': { id: 'W7', name: 'Adel', active: true }, 'W8': { id: 'W8', name: 'Makdeis', active: true },
-    'W9': { id: 'W9', name: 'Haidar', active: true }, 'W10': { id: 'W10', name: 'Rita', active: true },
-    'W11': { id: 'W11', name: 'Somar', active: true }, 'W12': { id: 'W12', name: 'Karim', active: true }
+    'W1': { id: 'W1', name: 'Amira', active: true },
+    'W2': { id: 'W2', name: 'Hussen', active: true },
+    'W3': { id: 'W3', name: 'Haydar Mahmoud', active: true },
+    'W4': { id: 'W4', name: 'Vina', active: true },
+    'W5': { id: 'W5', name: 'Nada', active: true },
+    'W6': { id: 'W6', name: 'Samara', active: true },
+    'W7': { id: 'W7', name: 'Adel', active: true },
+    'W8': { id: 'W8', name: 'Makdeis', active: true },
+    'W9': { id: 'W9', name: 'Haidar', active: true },
+    'W10': { id: 'W10', name: 'Rita', active: true },
+    'W11': { id: 'W11', name: 'Somar', active: true },
+    'W12': { id: 'W12', name: 'Karim', active: true }
   };
   const ROSTER_SECTIONS = {
     'S01': { id: 'S01', num: 1, name: 'Section 1', tables: [1,61,62,51,52,53,54,55,56,57,58,70,71,72,73,74,75,76,77,78], waiterId: 'W1' },
@@ -88,16 +124,30 @@
     'S11': { id: 'S11', num: 11, name: 'Section 11', tables: [7,8,9], waiterId: 'W11' },
     'S12': { id: 'S12', num: 12, name: 'Section 12', tables: [94,95,96], waiterId: 'W12' }
   };
+
   function getAllConfiguredTables() {
     const set = new Set();
-    Object.values(window.PhantomState.sections || {}).forEach(sec => (sec.tables || []).forEach(t => set.add(Number(t))));
+    Object.values(window.PhantomState.sections || {}).forEach(sec => {
+      (sec.tables || []).forEach(t => set.add(Number(t)));
+    });
     return [...set].sort((a,b) => a - b);
   }
+
   window.PhantomState = {
-    settings: { openHour: 23, openMin: 30, closeHour: 3, closeMin: 20, forceMode: 'auto', adminPin: '0000', waiterPin: '9999' },
-    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)), sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
-    tables: {}, requests: {}, greetings: {}
+    settings: {
+      openHour: 23, openMin: 30,
+      closeHour: 3, closeMin: 20,
+      forceMode: 'auto',
+      adminPin: '0000',
+      waiterPin: '9999'
+    },
+    waiters: JSON.parse(JSON.stringify(ROSTER_WAITERS)),
+    sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
+    tables: {},
+    requests: {},
+    greetings: {}
   };
+
   try {
     const cached = JSON.parse(localStorage.getItem(PHANTOM_ROOM) || '{}');
     if (cached.settings) Object.assign(window.PhantomState.settings, cached.settings);
@@ -107,21 +157,48 @@
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
   } catch(e) {}
-  function saveLocal() { localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState)); bc.postMessage({ type: 'SYNC', state: window.PhantomState }); }
-  bc.onmessage = (ev) => { if (ev.data && ev.data.type === 'SYNC') { window.PhantomState = ev.data.state; if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); } };
-  ['settings','waiters','sections','tables','requests','greetings'].forEach(col => {
-    if (col === 'settings') {
-      db.get('settings').on((data) => { if (!data) return; const clean = { ...data }; delete clean._; Object.assign(window.PhantomState.settings, clean); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); });
-    } else {
-      db.get(col).map().on((data, key) => {
-        if (!data) return; const clean = { ...data }; delete clean._;
-        if (col === 'sections' && typeof clean.tables === 'string') { try { clean.tables = JSON.parse(clean.tables); } catch(e) { clean.tables = []; } }
-        window.PhantomState[col][key] = clean; saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
-      });
+
+  function saveLocal(broadcast = true) {
+    localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
+    if (broadcast) {
+      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
     }
+  }
+
+  function fbSetItem(col, key, val) { fbRoomRef.child(col).child(String(key)).set(val); }
+
+  bc.onmessage = (ev) => {
+    if (ev.data && ev.data.type === 'SYNC') {
+      window.PhantomState = ev.data.state;
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    }
+  };
+
+  fbRoomRef.on('value', (snap) => {
+    const remote = snap.val();
+    if (!remote || typeof remote !== 'object') return;
+    if (remote.settings) Object.assign(window.PhantomState.settings, remote.settings);
+    if (remote.waiters && Object.keys(remote.waiters).length > 0) window.PhantomState.waiters = remote.waiters;
+    if (remote.sections && Object.keys(remote.sections).length > 0) {
+      const normalized = {};
+      Object.entries(remote.sections).forEach(([k, sec]) => {
+        if (!sec) return;
+        let tbls = sec.tables;
+        if (typeof tbls === 'string') {
+          try { tbls = JSON.parse(tbls); } catch(e) { tbls = []; }
+        }
+        normalized[k] = { ...sec, tables: Array.isArray(tbls) ? tbls : [] };
+      });
+      window.PhantomState.sections = normalized;
+    }
+    window.PhantomState.tables = remote.tables || {};
+    window.PhantomState.requests = remote.requests || {};
+    window.PhantomState.greetings = remote.greetings || {};
+    saveLocal(false);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
+
   window.PhantomAPI = {
-    getAllTables() { return getAllConfiguredTables(); },
     getSectionForTable(tableNum) {
       const num = Number(tableNum);
       for (const sec of Object.values(window.PhantomState.sections)) {
@@ -131,84 +208,171 @@
       return null;
     },
     getEffectiveWaiterId(tableNum) {
-      const k = String(tableNum); const tObj = window.PhantomState.tables[k];
+      const k = String(tableNum);
+      const tObj = window.PhantomState.tables[k];
       if (tObj && tObj.waiterId) return tObj.waiterId;
-      const sec = this.getSectionForTable(Number(tableNum)); return sec ? sec.waiterId : '';
+      const sec = this.getSectionForTable(Number(tableNum));
+      return sec ? sec.waiterId : '';
     },
-    addRequest(req) { const assignedW = req.waiterId || this.getEffectiveWaiterId(req.table); const fullReq = { ...req, waiterId: assignedW }; window.PhantomState.requests[fullReq.id] = fullReq; db.get('requests').get(fullReq.id).put(fullReq); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
-    addGreeting(gr) { window.PhantomState.greetings[gr.id] = gr; db.get('greetings').get(gr.id).put(gr); saveLocal(); if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate(); },
+    addRequest(req) {
+      const assignedW = req.waiterId || this.getEffectiveWaiterId(req.table);
+      const fullReq = { ...req, waiterId: assignedW };
+      window.PhantomState.requests[fullReq.id] = fullReq;
+      fbSetItem('requests', fullReq.id, fullReq);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
+    addGreeting(gr) {
+      window.PhantomState.greetings[gr.id] = gr;
+      fbSetItem('greetings', gr.id, gr);
+      saveLocal(true);
+      if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    },
     isClubOpen() {
       const s = window.PhantomState.settings;
-      if (s.forceMode === 'open') return true; if (s.forceMode === 'closed') return false;
-      const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000); const uae = new Date(utc + (3600000 * 4));
+      if (s.forceMode === 'open') return true;
+      if (s.forceMode === 'closed') return false;
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const uae = new Date(utc + (3600000 * 4));
       const mins = uae.getHours() * 60 + uae.getMinutes();
       const openMins = (Number(s.openHour) || 23) * 60 + (Number(s.openMin) || 30);
       const closeMins = (Number(s.closeHour) || 3) * 60 + (Number(s.closeMin) || 20);
-      return openMins > closeMins ? (mins >= openMins || mins < closeMins) : (mins >= openMins && mins < closeMins);
+      if (openMins > closeMins) {
+        return mins >= openMins || mins < closeMins;
+      }
+      return mins >= openMins && mins < closeMins;
     },
-    getUAETimeString() { const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60000); const uae = new Date(utc + (3600000 * 4)); return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); }
+    getUAETimeString() {
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const uae = new Date(utc + (3600000 * 4));
+      return uae.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
   };
-  const tSelect = document.getElementById('guestTableSelect');
-  function populateGuestTables() {
-    const prev = tSelect.value; tSelect.innerHTML = '';
-    window.PhantomAPI.getAllTables().forEach(t => {
-      const sec = window.PhantomAPI.getSectionForTable(t);
-      tSelect.innerHTML += `<option value="${t}">طاولة رقم ${t} ${sec ? '(' + sec.name + ')' : ''}</option>`;
-    });
-    if (prev && tSelect.querySelector(`option[value="${prev}"]`)) tSelect.value = prev;
+</script>
+
+<script>
+  let session = JSON.parse(sessionStorage.getItem('phantom_guest_session') || 'null');
+
+  function showToast(msg) {
+    const t = document.getElementById('toastMsg');
+    t.innerText = msg;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 3000);
   }
-  populateGuestTables();
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('table')) setTimeout(() => { if (tSelect.querySelector(`option[value="${urlParams.get('table')}"]`)) tSelect.value = urlParams.get('table'); }, 50);
-  let sessionTable = null;
-  function checkClubAndSession() {
-    const isOpen = window.PhantomAPI.isClubOpen();
-    document.getElementById('closedScreen').style.display = isOpen ? 'none' : 'block';
-    if (!isOpen) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('guestApp').style.display = 'none'; return; }
-    if (sessionTable) {
-      const tObj = window.PhantomState.tables[String(sessionTable)];
-      if (!tObj || tObj.status !== 'active') { logoutGuest(); return; }
-      document.getElementById('loginScreen').style.display = 'none'; document.getElementById('guestApp').style.display = 'block';
-      document.getElementById('activeTableNum').innerText = sessionTable;
-      const effWaiterId = window.PhantomAPI.getEffectiveWaiterId(sessionTable);
-      document.getElementById('activeWaiterName').innerText = (window.PhantomState.waiters[effWaiterId] || {}).name || 'الويتر';
-      renderMyRequests();
-    } else { document.getElementById('loginScreen').style.display = 'block'; document.getElementById('guestApp').style.display = 'none'; }
-  }
+
   function verifyGuest() {
-    const tNum = tSelect.value; const code = document.getElementById('guestCodeInput').value.trim();
-    const tObj = window.PhantomState.tables[String(tNum)];
-    if (!tObj || tObj.status !== 'active' || tObj.code !== code) { document.getElementById('loginError').innerText = 'رقم الطاولة أو الكود غير صحيح أو الطاولة غير مفعّلة.'; return; }
-    sessionTable = tNum; document.getElementById('loginError').innerText = ''; checkClubAndSession();
+    const table = document.getElementById('guestTableInput').value.trim();
+    const code = document.getElementById('guestCodeInput').value.trim();
+    const tObj = window.PhantomState.tables[table];
+    if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== code) {
+      return alert('رقم الطاولة أو الكود غير صحيح، يرجى التأكد من موظف الاستقبال.');
+    }
+    session = { table, code };
+    sessionStorage.setItem('phantom_guest_session', JSON.stringify(session));
+    renderGuestView();
   }
-  function logoutGuest() { sessionTable = null; document.getElementById('guestCodeInput').value = ''; checkClubAndSession(); }
+
+  function logoutGuest() {
+    session = null;
+    sessionStorage.removeItem('phantom_guest_session');
+    renderGuestView();
+  }
+
+  function getActiveTableObj() {
+    if (!session) return null;
+    const tObj = window.PhantomState.tables[session.table];
+    if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== session.code) {
+      logoutGuest();
+      return null;
+    }
+    return tObj;
+  }
+
   function sendCallWaiter() {
-    const waiterId = window.PhantomAPI.getEffectiveWaiterId(sessionTable);
-    window.PhantomAPI.addRequest({ id: 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), table: String(sessionTable), waiterId, type: 'call', text: 'استدعاء إلى الطاولة', status: 'pending', createdAt: Date.now(), timeStr: window.PhantomAPI.getUAETimeString() });
-    document.getElementById('callFeedback').innerText = 'تم إرسال استدعاء الويتر بنجاح ✓'; setTimeout(() => document.getElementById('callFeedback').innerText = '', 3000);
-  }
-  function fillOrder(txt) { document.getElementById('orderInput').value = txt; }
-  function sendOrder() {
-    const txt = document.getElementById('orderInput').value.trim(); if (!txt) return;
-    const waiterId = window.PhantomAPI.getEffectiveWaiterId(sessionTable);
-    window.PhantomAPI.addRequest({ id: 'req_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), table: String(sessionTable), waiterId, type: 'order', text: txt, status: 'pending', createdAt: Date.now(), timeStr: window.PhantomAPI.getUAETimeString() });
-    document.getElementById('orderInput').value = ''; document.getElementById('orderFeedback').innerText = 'تم إرسال طلبك بنجاح ✓'; setTimeout(() => document.getElementById('orderFeedback').innerText = '', 3000);
-  }
-  function sendGreeting() {
-    const txt = document.getElementById('greetingInput').value.trim(); if (!txt) return;
-    window.PhantomAPI.addGreeting({ id: 'gr_' + Date.now() + '_' + Math.random().toString(36).slice(2,6), table: String(sessionTable), text: txt, status: 'pending', createdAt: Date.now(), timeStr: window.PhantomAPI.getUAETimeString() });
-    document.getElementById('greetingInput').value = ''; document.getElementById('greetingFeedback').innerText = 'تم إرسال تحيتك للمراجعة والعرض على الشاشة ✓'; setTimeout(() => document.getElementById('greetingFeedback').innerText = '', 3500);
-  }
-  function renderMyRequests() {
-    const box = document.getElementById('myRequestsBox'); box.innerHTML = '';
-    const mine = Object.values(window.PhantomState.requests).filter(r => String(r.table) === String(sessionTable)).sort((a,b) => b.createdAt - a.createdAt).slice(0, 6);
-    if (!mine.length) { box.innerHTML = '<div style="color:#71717a; font-size:13px;">لا توجد طلبات بعد.</div>'; return; }
-    mine.forEach(r => {
-      const st = r.status === 'done' ? '<span style="color:#22c55e;">تم التنفيذ ✓</span>' : '<span style="color:#eab308;">قيد الانتظار...</span>';
-      box.innerHTML += `<div style="background:#0d0d11; padding:9px 12px; border-radius:10px; display:flex; justify-content:space-between; font-size:13px;"><span>${r.text}</span>${st}</div>`;
+    const tObj = getActiveTableObj();
+    if (!tObj) return;
+    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
+    window.PhantomAPI.addRequest({
+      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: effectiveWaiter,
+      type: 'call', text: 'استدعاء ويتر عاجل',
+      status: 'pending', createdAt: Date.now(),
+      timeStr: window.PhantomAPI.getUAETimeString()
     });
+    showToast('✅ تم استدعاء الويتر بنجاح!');
   }
-  window.onPhantomUpdate = () => { populateGuestTables(); checkClubAndSession(); };
-  checkClubAndSession(); setInterval(checkClubAndSession, 10000);
+
+  function sendOrder() {
+    const tObj = getActiveTableObj();
+    if (!tObj) return;
+    const text = document.getElementById('orderText').value.trim();
+    if (!text) return alert('يرجى كتابة الطلب أولاً');
+    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
+    window.PhantomAPI.addRequest({
+      id: 'REQ_' + Date.now(), table: tObj.table, waiterId: effectiveWaiter,
+      type: 'order', text,
+      status: 'pending', createdAt: Date.now(),
+      timeStr: window.PhantomAPI.getUAETimeString()
+    });
+    document.getElementById('orderText').value = '';
+    showToast('✅ تم إرسال طلبك للويتر!');
+  }
+
+  function sendGreeting() {
+    const tObj = getActiveTableObj();
+    if (!tObj) return;
+    const text = document.getElementById('greetingText').value.trim();
+    if (!text) return alert('يرجى كتابة نص التحية أولاً');
+    const effectiveWaiter = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
+    const nowId = 'REQ_' + Date.now();
+    const timeStr = window.PhantomAPI.getUAETimeString();
+    window.PhantomAPI.addRequest({
+      id: nowId, table: tObj.table, waiterId: effectiveWaiter,
+      type: 'greeting', text,
+      status: 'pending', createdAt: Date.now(),
+      timeStr
+    });
+    document.getElementById('greetingText').value = '';
+    showToast('✨ تم إرسال التحية للمراجعة والعرض!');
+  }
+
+  function renderGuestView() {
+    const isOpen = window.PhantomAPI.isClubOpen();
+    const closedEl = document.getElementById('closedScreen');
+    const authEl = document.getElementById('authScreen');
+    const servEl = document.getElementById('serviceScreen');
+
+    if (!isOpen) {
+      session = null;
+      sessionStorage.removeItem('phantom_guest_session');
+      closedEl.style.display = 'block';
+      authEl.style.display = 'none';
+      servEl.style.display = 'none';
+      return;
+    }
+
+    closedEl.style.display = 'none';
+    const tObj = getActiveTableObj();
+    if (!tObj) {
+      authEl.style.display = 'block';
+      servEl.style.display = 'none';
+    } else {
+      authEl.style.display = 'none';
+      servEl.style.display = 'block';
+      document.getElementById('activeTableNum').innerText = tObj.table;
+      const effW = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
+      const wName = (window.PhantomState.waiters[effW] || {}).name || effW;
+      document.getElementById('activeWaiterName').innerText = wName;
+    }
+  }
+
+  window.onPhantomUpdate = renderGuestView;
+  setInterval(() => {
+    const c = document.getElementById('guestClock');
+    if (c) c.innerText = window.PhantomAPI.getUAETimeString();
+    renderGuestView();
+  }, 1000);
+  renderGuestView();
 </script>
 </body></html>
