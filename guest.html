@@ -84,6 +84,9 @@
       <button class="btn btn-dark" style="padding:7px 12px; font-size:12px;" onclick="logoutGuest()">خروج • Exit</button>
     </div>
 
+    <!-- إشعارات الطاولة (يتم تفريغها عند التصفير من الأدمن) -->
+    <div id="guestNoticesBox" style="display:none; flex-direction:column; gap:8px; margin-bottom:14px;"></div>
+
     <!-- استدعاء الويتر -->
     <div class="card" style="text-align:center; margin-bottom:14px; border-color:#d4af37;">
       <button class="btn btn-primary" style="width:100%; padding:18px; font-size:18px; border-radius:16px; flex-direction:column; gap:2px;" onclick="sendCallWaiter()">
@@ -176,7 +179,9 @@
     sections: {},
     tables: {},
     requests: {},
-    greetings: {}
+    greetings: {},
+    guestNotifications: {},
+    lastResetSignal: null
   };
 
   try {
@@ -187,7 +192,26 @@
     if (cached.tables) window.PhantomState.tables = cached.tables;
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+    if (cached.guestNotifications) window.PhantomState.guestNotifications = cached.guestNotifications;
+    if (cached.lastResetSignal) window.PhantomState.lastResetSignal = cached.lastResetSignal;
   } catch(e) {}
+
+  let lastHandledResetId = '';
+
+  function applyGuestHardResetIfNeeded(signal, targets = ['all']) {
+    if (!signal || !signal.id || signal.id === lastHandledResetId) return;
+    if (!targets.includes('all') && !targets.includes('guest')) return;
+    lastHandledResetId = signal.id;
+    window.PhantomState.guestNotifications = {};
+    window.PhantomState.requests = {};
+    const toastEl = document.getElementById('toastMsg');
+    if (toastEl) toastEl.style.display = 'none';
+    const noticesEl = document.getElementById('guestNoticesBox');
+    if (noticesEl) {
+      noticesEl.style.display = 'none';
+      noticesEl.innerHTML = '';
+    }
+  }
 
   function saveLocal(broadcast = true) {
     localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
@@ -197,8 +221,11 @@
   function fbSetItem(col, key, val) { fbRoomRef.child(col).child(String(key)).set(val); }
 
   bc.onmessage = (ev) => {
-    if (ev.data && ev.data.type === 'SYNC') {
-      window.PhantomState = ev.data.state;
+    if (ev.data && (ev.data.type === 'SYNC' || ev.data.type === 'HARD_RESET')) {
+      if (ev.data.state) window.PhantomState = ev.data.state;
+      if (ev.data.type === 'HARD_RESET') {
+        applyGuestHardResetIfNeeded(ev.data.signal, ev.data.targets || ['all']);
+      }
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     }
   };
@@ -212,6 +239,11 @@
     window.PhantomState.tables = remote.tables || {};
     window.PhantomState.requests = remote.requests || {};
     window.PhantomState.greetings = remote.greetings || {};
+    window.PhantomState.guestNotifications = remote.guestNotifications || {};
+    window.PhantomState.lastResetSignal = remote.lastResetSignal || null;
+    if (remote.lastResetSignal && remote.lastResetSignal.id) {
+      applyGuestHardResetIfNeeded(remote.lastResetSignal, remote.lastResetSignal.targets || ['all']);
+    }
     saveLocal(false);
     if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
@@ -383,6 +415,22 @@
       const effW = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
       const wName = (window.PhantomState.waiters[effW] || {}).name || effW;
       document.getElementById('activeWaiterName').innerText = wName;
+
+      const noticesEl = document.getElementById('guestNoticesBox');
+      const gNotifs = Object.values(window.PhantomState.guestNotifications || {})
+        .filter(n => n && (!n.table || String(n.table) === String(tObj.table)));
+      if (gNotifs.length > 0) {
+        noticesEl.style.display = 'flex';
+        noticesEl.innerHTML = gNotifs.map(n => `
+          <div class="card" style="padding:10px 12px; border-color:#38bdf8; font-size:13px;">
+            <div>${n.message || n.text || ''}</div>
+            <div style="font-size:11px; color:#a1a1aa; margin-top:2px;">${n.timeStr || ''}</div>
+          </div>
+        `).join('');
+      } else {
+        noticesEl.style.display = 'none';
+        noticesEl.innerHTML = '';
+      }
     }
   }
 
