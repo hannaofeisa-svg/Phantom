@@ -66,6 +66,20 @@
     <div id="myTablesList" style="display:flex; flex-direction:column; gap:6px; max-height:210px; overflow-y:auto;"></div>
   </div>
 
+  <!-- إرسال تحية مباشرة للشاشة دون طلب من الزبون -->
+  <div class="card" style="margin-bottom:14px; border-color:#3b3216;">
+    <div style="font-size:14px; font-weight:700; color:#d4af37; margin-bottom:10px;">
+      ✨ إرسال تحية مباشرة للشاشة • Send Direct Greeting to Screen
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <select id="directGreetingTableSelect"></select>
+      <input type="text" id="directGreetingInput" placeholder="اكتب نص التحية للشاشة... • Type greeting message..." maxlength="140">
+      <button class="btn btn-primary" style="width:100%;" onclick="sendDirectGreetingToScreen()">
+        📺 إرسال التحية للشاشة الآن • Send Greeting to Screen
+      </button>
+    </div>
+  </div>
+
   <div id="alarmBanner" style="display:none; background:#dc2626; color:#fff; padding:18px; border-radius:16px; text-align:center; margin-bottom:16px; box-shadow:0 0 30px rgba(220,38,38,0.8);">
     <div style="font-size:22px; font-weight:900; margin-bottom:6px;">🚨 تنبيه طلب عاجل! • URGENT ALERT! 🚨</div>
     <div id="alarmDetails" style="font-size:17px; font-weight:700; margin-bottom:14px;"></div>
@@ -339,6 +353,37 @@
     alert('تم إرسال التحية إلى الشاشة • Greeting Sent to Screen');
   }
 
+  function sendDirectGreetingToScreen() {
+    const tableSel = document.getElementById('directGreetingTableSelect');
+    const inputEl = document.getElementById('directGreetingInput');
+    const tableNum = Number(tableSel.value);
+    const text = (inputEl.value || '').trim();
+
+    if (!tableNum) {
+      alert('اختر الطاولة أولاً • Please select a table');
+      return;
+    }
+    if (!text) {
+      alert('اكتب نص التحية أولاً • Please enter a greeting message');
+      inputEl.focus();
+      return;
+    }
+
+    window.PhantomAPI.addGreeting({
+      id: 'GR_' + Date.now(),
+      table: tableNum,
+      text: text,
+      waiterId: assignedWaiterId,
+      source: 'waiter_direct',
+      status: 'approved',
+      createdAt: Date.now(),
+      timeStr: window.PhantomAPI.getUAETimeString()
+    });
+
+    inputEl.value = '';
+    alert(`تم إرسال التحية لطاولة #${tableNum} إلى الشاشة • Greeting Sent to Screen!`);
+  }
+
   function sendDelayAlertToScreen(reqId) {
     const r = window.PhantomState.requests[reqId];
     if (!r) return;
@@ -412,6 +457,33 @@
           <span style="font-size:11px; color:#a1a1aa;">${item.sectionName}</span>
         </div>`;
     });
+
+    // تعبئة قائمة الطاولات للتحية المباشرة (طاولات الويتر أولاً ثم باقي الطاولات إن وجدت)
+    const directTableSel = document.getElementById('directGreetingTableSelect');
+    if (directTableSel) {
+      const prevTableVal = directTableSel.value;
+      const myTableNums = new Set(myTables.map(t => Number(t.table)));
+      const allTables = getAllConfiguredTables();
+      const orderedTables = [
+        ...myTables.map(t => Number(t.table)),
+        ...allTables.filter(t => !myTableNums.has(Number(t)))
+      ];
+
+      directTableSel.innerHTML = '';
+      if (orderedTables.length === 0) {
+        directTableSel.innerHTML = '<option value="">لا توجد طاولات مضافة • No Tables Configured</option>';
+      } else {
+        orderedTables.forEach(tNum => {
+          const tObj = (window.PhantomState.tables || {})[String(tNum)] || {};
+          const tag = myTableNums.has(Number(tNum)) ? 'طاولتي • My Table' : 'طاولة أخرى • Other';
+          const statusTxt = tObj.status === 'active' ? 'مفعّلة • Active' : 'فارغة • Idle';
+          directTableSel.innerHTML += `<option value="${tNum}">طاولة #${tNum} (${tag} — ${statusTxt})</option>`;
+        });
+        if (prevTableVal && directTableSel.querySelector(`option[value="${prevTableVal}"]`)) {
+          directTableSel.value = prevTableVal;
+        }
+      }
+    }
 
     const myReqs = Object.values(window.PhantomState.requests || {})
       .filter(r => r.waiterId === assignedWaiterId && r.status !== 'expired')
