@@ -1,0 +1,22 @@
+{
+  "name": "Phantom Door",
+  "short_name": "Phantom Door",
+  "start_url": "./door.html",
+  "scope": "./door.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#d4af37",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/000000/d4af37.png?text=DR",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/000000/d4af37.png?text=DR",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
