@@ -9,12 +9,12 @@
   "theme_color": "#d4af37",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192/000000/d4af37.png?text=PC",
+      "src": "./1795708205440.jpg",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://via.placeholder.com/512/000000/d4af37.png?text=PC",
+      "src": "./1795708205440.jpg",
       "sizes": "512x512",
       "type": "image/png"
     }
