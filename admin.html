@@ -60,12 +60,33 @@
     </div>
   </div>
 
+  <!-- 0. تصفير وريستارت الصفحات والتنبيهات بعد انتهاء السهرة والمراجعة -->
+  <div class="card" style="margin-bottom:16px; border-color:#ef4444;">
+    <div class="card-header">
+      <div>
+        <h3 style="margin:0; color:#f87171;">🧹 تصفير وريستارت الصفحات والتنبيهات (يدوي متى شئت)</h3>
+        <div style="font-size:12px; color:#a1a1aa;">يُنفَّذ فقط عند الضغط بعد إنهاء المراجعة والتشيك. يزيل العناصر دفعة واحدة بدون حذف واحد بواحد.</div>
+      </div>
+      <button id="btn_clearAlertsCard" class="btn btn-dark btn-sm" onclick="toggleCard('clearAlertsCard')">📂 تصغير</button>
+    </div>
+    <div id="body_clearAlertsCard" class="card-body" style="margin-top:12px;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+        <button class="btn btn-danger" onclick="clearWaiterPage()">🍽️ تصفير صفحة الويتر (طلبات وتنبيهات)</button>
+        <button class="btn btn-danger" onclick="clearScreenPage()">📺 تصفير صفحة السكرين (تحيات وتنبيهات)</button>
+        <button class="btn btn-danger" onclick="clearDoorPage()">🚪 تصفير صفحة الباب (إشعارات وتنبيهات)</button>
+        <button class="btn btn-danger" onclick="clearGuestPage()">🥂 تصفير صفحة الزبون (إشعارات وطلبات)</button>
+        <button class="btn btn-primary" style="grid-column: 1 / -1;" onclick="resetAllPagesAndAlerts()">⚡ ريستارت شامل لجميع الصفحات والتنبيهات الآن</button>
+      </div>
+      <div id="adminClearFeedback" style="font-size:12px; color:#4ade80; margin-top:8px; min-height:18px;"></div>
+    </div>
+  </div>
+
   <!-- 1. إرسال تحية مباشرة إلى السكرين -->
   <div class="card" style="margin-bottom:16px; border-color:#a855f7;">
     <div class="card-header">
       <div>
         <h3 style="margin:0; color:#c084fc;">✨ إرسال تحية مباشرة إلى صفحة السكرين (screen.html)</h3>
-        <div style="font-size:12px; color:#a1a1aa;">تظهر التحية مباشرة في قائمة التحيات بصفحة السكرين.</div>
+        <div style="font-size:12px; color:#a1a1aa;">تظهر التحية مباشرة في قائمة التحيات بصفحة السكرين مع إظهار مصدرها (الأدمن).</div>
       </div>
       <button id="btn_greetingCard" class="btn btn-dark btn-sm" onclick="toggleCard('greetingCard')">📂 تصغير</button>
     </div>
@@ -339,7 +360,11 @@
     sections: JSON.parse(JSON.stringify(DEFAULT_ROSTER_SECTIONS)),
     tables: {},
     requests: {},
-    greetings: {}
+    greetings: {},
+    screenAlerts: {},
+    doorAlerts: {},
+    guestNotifications: {},
+    lastResetSignal: null
   };
 
   try {
@@ -355,12 +380,16 @@
     if (cached.tables) window.PhantomState.tables = cached.tables;
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+    if (cached.screenAlerts) window.PhantomState.screenAlerts = cached.screenAlerts;
+    if (cached.doorAlerts) window.PhantomState.doorAlerts = cached.doorAlerts;
+    if (cached.guestNotifications) window.PhantomState.guestNotifications = cached.guestNotifications;
+    if (cached.lastResetSignal) window.PhantomState.lastResetSignal = cached.lastResetSignal;
   } catch(e) {}
 
-  function saveLocal(broadcast = true) {
+  function saveLocal(broadcast = true, extraPayload = null) {
     localStorage.setItem(PHANTOM_ROOM, JSON.stringify(window.PhantomState));
     if (broadcast) {
-      bc.postMessage({ type: 'SYNC', state: window.PhantomState });
+      bc.postMessage(extraPayload || { type: 'SYNC', state: window.PhantomState });
     }
   }
 
@@ -371,8 +400,8 @@
   function fbSyncFullState() { fbRoomRef.set(window.PhantomState); }
 
   bc.onmessage = (ev) => {
-    if (ev.data && ev.data.type === 'SYNC') {
-      window.PhantomState = ev.data.state;
+    if (ev.data && (ev.data.type === 'SYNC' || ev.data.type === 'HARD_RESET')) {
+      if (ev.data.state) window.PhantomState = ev.data.state;
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     }
   };
@@ -402,6 +431,10 @@
     window.PhantomState.tables = remote.tables || {};
     window.PhantomState.requests = remote.requests || {};
     window.PhantomState.greetings = remote.greetings || {};
+    window.PhantomState.screenAlerts = remote.screenAlerts || {};
+    window.PhantomState.doorAlerts = remote.doorAlerts || {};
+    window.PhantomState.guestNotifications = remote.guestNotifications || {};
+    window.PhantomState.lastResetSignal = remote.lastResetSignal || null;
     saveLocal(false);
     if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
@@ -413,6 +446,85 @@
     };
     ROSTER_WAITERS = JSON.parse(JSON.stringify(window.PhantomState.waiters));
     ROSTER_SECTIONS = JSON.parse(JSON.stringify(window.PhantomState.sections));
+  }
+
+  function showClearFeedback(msg) {
+    const el = document.getElementById('adminClearFeedback');
+    if (el) {
+      el.innerText = msg;
+      setTimeout(() => { el.innerText = ''; }, 4000);
+    }
+  }
+
+  function emitResetSignal(targets = ['all']) {
+    const signal = {
+      id: 'RST_' + Date.now(),
+      targets,
+      at: Date.now(),
+      timeStr: window.PhantomAPI.getUAETimeString()
+    };
+    window.PhantomState.lastResetSignal = signal;
+    fbRoomRef.child('lastResetSignal').set(signal);
+    saveLocal(true, { type: 'HARD_RESET', targets, signal, state: window.PhantomState });
+  }
+
+  function clearWaiterPage() {
+    if (!confirm('تصفير جميع الطلبات والتنبيهات في صفحة الويتر الآن؟')) return;
+    window.PhantomState.requests = {};
+    window.PhantomState.screenAlerts = {};
+    fbRoomRef.child('requests').remove();
+    fbRoomRef.child('screenAlerts').remove();
+    emitResetSignal(['waiter', 'screen']);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    showClearFeedback('✅ تم تصفير طلبات وتنبيهات صفحة الويتر بالكامل.');
+  }
+
+  function clearScreenPage() {
+    if (!confirm('تصفير جميع التحيات وتنبيهات الشاشة في صفحة السكرين الآن؟')) return;
+    window.PhantomState.greetings = {};
+    window.PhantomState.screenAlerts = {};
+    fbRoomRef.child('greetings').remove();
+    fbRoomRef.child('screenAlerts').remove();
+    emitResetSignal(['screen']);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    showClearFeedback('✅ تم تصفير التحيات والتنبيهات في صفحة السكرين بالكامل.');
+  }
+
+  function clearDoorPage() {
+    if (!confirm('تصفير جميع الإشعارات والتنبيهات في صفحة الباب الآن؟')) return;
+    window.PhantomState.doorAlerts = {};
+    fbRoomRef.child('doorAlerts').remove();
+    emitResetSignal(['door']);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    showClearFeedback('✅ تم تصفير إشعارات وتنبيهات صفحة الباب بالكامل.');
+  }
+
+  function clearGuestPage() {
+    if (!confirm('تصفير جميع الإشعارات والطلبات النشطة في صفحة الزبون الآن؟')) return;
+    window.PhantomState.guestNotifications = {};
+    window.PhantomState.requests = {};
+    fbRoomRef.child('guestNotifications').remove();
+    fbRoomRef.child('requests').remove();
+    emitResetSignal(['guest', 'waiter']);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    showClearFeedback('✅ تم تصفير إشعارات وطلبات صفحة الزبون بالكامل.');
+  }
+
+  function resetAllPagesAndAlerts() {
+    if (!confirm('ريستارت شامل: إزالة جميع الطلبات، التحيات، وتنبيهات الويتر والباب والسكرين والزبون الآن؟')) return;
+    window.PhantomState.requests = {};
+    window.PhantomState.greetings = {};
+    window.PhantomState.screenAlerts = {};
+    window.PhantomState.doorAlerts = {};
+    window.PhantomState.guestNotifications = {};
+    fbRoomRef.child('requests').remove();
+    fbRoomRef.child('greetings').remove();
+    fbRoomRef.child('screenAlerts').remove();
+    fbRoomRef.child('doorAlerts').remove();
+    fbRoomRef.child('guestNotifications').remove();
+    emitResetSignal(['all']);
+    if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
+    showClearFeedback('✅ تم تنفيذ الريستارت الشامل وتصفير التنبيهات والطلبات والتحيات في كل الصفحات.');
   }
 
   window.PhantomAPI = {
@@ -603,6 +715,7 @@
   const tTransferSel = document.getElementById('transferTableSelect');
   const COLLAPSE_KEY = 'phantom_admin_all_cards_collapse_v2';
   const ALL_CARD_IDS = [
+    'clearAlertsCard',
     'greetingCard',
     'sectionsCard',
     'tableManageCard',
@@ -661,6 +774,8 @@
       table: rawTable,
       text,
       waiterId: 'ADMIN',
+      senderRole: 'admin',
+      senderLabel: 'صفحة الأدمن • Admin',
       status: 'approved',
       createdAt: Date.now(),
       timeStr: window.PhantomAPI.getUAETimeString()
