@@ -22,6 +22,46 @@
   .btn-info { background: #0284c7; color: #fff; }
   .btn-dark { background: #22222a; color: #e4e4e7; border: 1px solid #32323e; }
   .open-table-card { background: #0d0d11; border: 1px solid #2e2e38; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: #0d0d11;
+    border: 1px solid #2e2e38;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .meta-pill {
+    background: #1a1a22;
+    border: 1px solid #32323e;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-weight: 700;
+    color: #f4f4f5;
+  }
+  .meta-pill.table-pill {
+    border-color: #d4af37;
+    color: #d4af37;
+    background: #241f10;
+  }
+  .meta-pill.admin-pill {
+    border-color: #c084fc;
+    color: #e9d5ff;
+    background: #231336;
+  }
+  .meta-pill.door-pill {
+    border-color: #38bdf8;
+    color: #bae6fd;
+    background: #0c2230;
+  }
+  .meta-pill.waiter-pill {
+    border-color: #4ade80;
+    color: #bbf7d0;
+    background: #0f2417;
+  }
   .screenshot-frame {
     width: 100%;
     max-width: 260px;
@@ -43,7 +83,7 @@
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; border-bottom:1px solid #27272f; padding-bottom:12px; margin-bottom:16px;">
     <div>
       <h2 class="gold" style="margin:0;">PHANTOM CLUB — شاشة التحيات والطاولات</h2>
-      <div style="font-size:13px; color:#a1a1aa;">تصل التحية كصورة بخلفية سوداء داكنة تحتوي على نص التحية فقط</div>
+      <div style="font-size:13px; color:#a1a1aa;">تصل التحية كصورة بخلفية سوداء داكنة تحتوي على نص التحية فقط، مع شريط معلومات منفصل للمرسل والطاولة</div>
     </div>
     <button class="btn btn-dark" onclick="toggleOpenedTablesPanel()" id="toggleTablesBtn">🪑 إخفاء / إظهار الطاولات المفتوحة</button>
   </div>
@@ -54,6 +94,7 @@
   <!-- بطاقة العرض المباشر للصورة على الشاشة -->
   <div id="liveStage" class="card" style="text-align:center; padding:24px 16px; border:2px solid #d4af37; background:#0b0b0e; margin-bottom:20px;">
     <div style="font-size:14px; color:#d4af37; letter-spacing:1px; margin-bottom:10px;">✨ المعاينة المباشرة لصورة التحية (اسحب الصورة لنقلها لأي صفحة) ✨</div>
+    <div id="stageMetaHolder" style="max-width:460px; margin:0 auto 12px;"></div>
     <div id="stageImageHolder" style="min-height:120px; display:flex; align-items:center; justify-content:center;">
       <div style="color:#a1a1aa; font-size:16px;">بانتظار وصول تحية...</div>
     </div>
@@ -91,6 +132,21 @@
   const fbDb = firebase.database();
   const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
+
+  const BILINGUAL_WAITER_NAMES = {
+    'W1': 'Amira • أميرة',
+    'W2': 'Hussen • حسين',
+    'W3': 'Haydar Mahmoud • حيدر محمود',
+    'W4': 'Vina • فينا',
+    'W5': 'Nada • ندى',
+    'W6': 'Samara • سمارة',
+    'W7': 'Adel • عادل',
+    'W8': 'Makdeis • مقديس',
+    'W9': 'Haidar • حيدر',
+    'W10': 'Rita • ريتا',
+    'W11': 'Somar • سومر',
+    'W12': 'Karim • كريم'
+  };
 
   function getUAEDateObj() {
     const now = new Date();
@@ -150,8 +206,8 @@
   function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
 
   bc.onmessage = (ev) => {
-    if (ev.data && ev.data.type === 'SYNC') {
-      window.PhantomState = ev.data.state;
+    if (ev.data && (ev.data.type === 'SYNC' || ev.data.type === 'HARD_RESET')) {
+      if (ev.data.state) window.PhantomState = ev.data.state;
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     }
   };
@@ -202,6 +258,81 @@
   let currentDisplayedId = null;
   const screenshotCache = {};
 
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function resolveGreetingMeta(g) {
+    const rawTable = String(g.table || '').trim();
+    const tableLabel = rawTable
+      ? (/^\d+$/.test(rawTable) ? `طاولة #${rawTable}` : rawTable)
+      : 'غير محدد';
+
+    const wId = String(g.waiterId || '').trim();
+    const wObj = (window.PhantomState.waiters || {})[wId];
+    const wName = (wObj && wObj.name) ? wObj.name : (BILINGUAL_WAITER_NAMES[wId] || '');
+
+    let senderType = 'waiter';
+    let senderText = '';
+
+    if (g.senderRole === 'admin' || wId === 'ADMIN' || rawTable.toUpperCase() === 'ADMIN') {
+      senderType = 'admin';
+      senderText = g.senderLabel || 'مرسلة من: صفحة الأدمن • Admin';
+    } else if (g.senderRole === 'door' || wId === 'DOOR' || rawTable.toUpperCase() === 'DOOR') {
+      senderType = 'door';
+      senderText = g.senderLabel || 'مرسلة من: صفحة الباب • Door';
+    } else {
+      senderType = 'waiter';
+      senderText = wName ? `الويتر: ${wName}` : (wId ? `الويتر: ${wId}` : 'الويتر: غير محدد');
+    }
+
+    return {
+      tableLabel,
+      senderType,
+      senderText,
+      timeStr: g.timeStr || ''
+    };
+  }
+
+  function buildMetaStripElement(g) {
+    const meta = resolveGreetingMeta(g);
+    const strip = document.createElement('div');
+    strip.className = 'meta-strip';
+
+    const leftGroup = document.createElement('div');
+    leftGroup.style.display = 'flex';
+    leftGroup.style.flexWrap = 'wrap';
+    leftGroup.style.alignItems = 'center';
+    leftGroup.style.gap = '6px';
+
+    const tablePill = document.createElement('span');
+    tablePill.className = 'meta-pill table-pill';
+    tablePill.innerText = `🪑 ${meta.tableLabel}`;
+
+    const senderPill = document.createElement('span');
+    senderPill.className = `meta-pill ${meta.senderType}-pill`;
+    const icon = meta.senderType === 'admin' ? '🛡️' : (meta.senderType === 'door' ? '🚪' : '🍽️');
+    senderPill.innerText = `${icon} ${meta.senderText}`;
+
+    leftGroup.appendChild(tablePill);
+    leftGroup.appendChild(senderPill);
+    strip.appendChild(leftGroup);
+
+    if (meta.timeStr) {
+      const timeEl = document.createElement('span');
+      timeEl.style.color = '#a1a1aa';
+      timeEl.style.fontSize = '11px';
+      timeEl.innerText = meta.timeStr;
+      strip.appendChild(timeEl);
+    }
+
+    return strip;
+  }
+
   function isArabicMessage(text) {
     return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(String(text || ''));
   }
@@ -243,7 +374,7 @@
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // خلفية سوداء غامقة داكنة بالكامل بدون أي إطار أو شريط أو نص إضافي
+    // خلفية سوداء غامقة داكنة بالكامل تحتوي على نص التحية فقط دون أي معلومات إضافية داخل الصورة
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, W, H);
 
@@ -304,14 +435,15 @@
     if (img && img.src) copyImageDataUrlToClipboard(img.src);
   }
 
-  function displayOnScreen(id) {
-    const g = (window.PhantomState.greetings || {})[id];
-    if (!g) return;
-    currentDisplayedId = id;
-    const dataUrl = buildPhoneScreenshotDataUrl(g);
+  function renderStageWithGreeting(g) {
+    const metaHolder = document.getElementById('stageMetaHolder');
     const holder = document.getElementById('stageImageHolder');
+    if (metaHolder) {
+      metaHolder.innerHTML = '';
+      metaHolder.appendChild(buildMetaStripElement(g));
+    }
+    const dataUrl = buildPhoneScreenshotDataUrl(g);
     holder.innerHTML = '';
-
     const img = document.createElement('img');
     img.src = dataUrl;
     img.alt = g.text || 'Greeting';
@@ -324,12 +456,20 @@
     dlBtn.href = dataUrl;
     dlBtn.download = `phantom_greeting_${g.id || 'msg'}.png`;
     document.getElementById('stageActions').style.display = 'flex';
+  }
 
+  function displayOnScreen(id) {
+    const g = (window.PhantomState.greetings || {})[id];
+    if (!g) return;
+    currentDisplayedId = id;
+    renderStageWithGreeting(g);
     window.PhantomAPI.updateGreeting(id, { status: 'displayed' });
   }
 
   function clearStage() {
     currentDisplayedId = null;
+    const metaHolder = document.getElementById('stageMetaHolder');
+    if (metaHolder) metaHolder.innerHTML = '';
     document.getElementById('stageImageHolder').innerHTML = '<div style="color:#a1a1aa; font-size:16px;">بانتظار وصول تحية...</div>';
     document.getElementById('stageActions').style.display = 'none';
   }
@@ -346,8 +486,8 @@
         alertsBox.innerHTML = activeAlerts.map(a => `
           <div style="background:#451a03; border:2px solid #f59e0b; border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
             <div>
-              <div style="font-weight:900; color:#fbbf24; font-size:15px;">⚠️ تنبيه تأخر تحية — طاولة #${a.table} (${a.waiterName || a.waiterId}) • ${a.timeStr || ''}</div>
-              <div style="font-size:14px; color:#fff; margin-top:3px;">${a.greetingText || a.message}</div>
+              <div style="font-weight:900; color:#fbbf24; font-size:15px;">⚠️ تنبيه تأخر تحية — طاولة #${escapeHtml(a.table)} (${escapeHtml(a.waiterName || a.waiterId)}) • ${escapeHtml(a.timeStr || '')}</div>
+              <div style="font-size:14px; color:#fff; margin-top:3px;">${escapeHtml(a.greetingText || a.message)}</div>
             </div>
             <button class="btn btn-danger" style="padding:7px 12px; font-size:12px;" onclick="window.PhantomAPI.dismissScreenAlert('${a.id}')">إغلاق التنبيه</button>
           </div>
@@ -375,18 +515,18 @@
           const sec = window.PhantomAPI.getSectionForTable(Number(t.table));
           const wName = (window.PhantomState.waiters && window.PhantomState.waiters[t.waiterId])
             ? window.PhantomState.waiters[t.waiterId].name
-            : (t.waiterId || '---');
+            : (BILINGUAL_WAITER_NAMES[t.waiterId] || t.waiterId || '---');
           const priceNum = Number(t.tablePrice) || 0;
           const priceDisplay = priceNum > 0 ? `${priceNum} AED` : 'غير محدد';
 
           openedGrid.innerHTML += `
             <div class="open-table-card">
               <div>
-                <div style="font-weight:900; color:#d4af37; font-size:15px;">طاولة #${t.table}</div>
-                <div style="font-size:12px; color:#a1a1aa;">${sec ? sec.name : ''} • ويتر: <strong style="color:#e4e4e7;">${wName}</strong></div>
+                <div style="font-weight:900; color:#d4af37; font-size:15px;">طاولة #${escapeHtml(t.table)}</div>
+                <div style="font-size:12px; color:#a1a1aa;">${escapeHtml(sec ? sec.name : '')} • ويتر: <strong style="color:#e4e4e7;">${escapeHtml(wName)}</strong></div>
               </div>
               <div style="background:#241f10; border:1px solid #d4af37; color:#4ade80; padding:5px 10px; border-radius:10px; font-weight:900; font-size:13px; white-space:nowrap;">
-                ${priceDisplay}
+                ${escapeHtml(priceDisplay)}
               </div>
             </div>`;
         });
@@ -398,25 +538,19 @@
     const list = Object.values(window.PhantomState.greetings || {}).sort((a,b) => b.createdAt - a.createdAt);
 
     if (list.length === 0) {
+      clearStage();
       q.innerHTML = '<div class="card" style="text-align:center; color:#71717a; grid-column: 1 / -1;">لا توجد تحيات في الانتظار</div>';
       return;
     }
 
+    if (currentDisplayedId && !window.PhantomState.greetings[currentDisplayedId]) {
+      currentDisplayedId = null;
+    }
+
     if (!currentDisplayedId && list.length > 0) {
-      const latest = list[0];
-      const latestUrl = buildPhoneScreenshotDataUrl(latest);
-      const holder = document.getElementById('stageImageHolder');
-      holder.innerHTML = '';
-      const stageImg = document.createElement('img');
-      stageImg.src = latestUrl;
-      stageImg.className = 'screenshot-frame';
-      stageImg.style.maxWidth = '300px';
-      setupDraggableImage(stageImg, latest, latestUrl);
-      holder.appendChild(stageImg);
-      const dlBtn = document.getElementById('stageDownloadBtn');
-      dlBtn.href = latestUrl;
-      dlBtn.download = `phantom_greeting_${latest.id || 'msg'}.png`;
-      document.getElementById('stageActions').style.display = 'flex';
+      renderStageWithGreeting(list[0]);
+    } else if (currentDisplayedId && window.PhantomState.greetings[currentDisplayedId]) {
+      renderStageWithGreeting(window.PhantomState.greetings[currentDisplayedId]);
     }
 
     list.forEach(g => {
@@ -430,6 +564,9 @@
       card.style.display = 'flex';
       card.style.flexDirection = 'column';
       card.style.gap = '10px';
+
+      // شريط معلومات منفصل تماماً عن الصورة يعرض الطاولة والويتر أو مصدر الإرسال (أدمن / باب)
+      card.appendChild(buildMetaStripElement(g));
 
       const img = document.createElement('img');
       img.src = dataUrl;
