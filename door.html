@@ -49,6 +49,9 @@
     <button class="btn btn-dark" style="padding:7px 12px; font-size:12px;" onclick="lockDoorScreen()">قفل</button>
   </div>
 
+  <!-- تنبيهات صفحة الباب (يتم تصفيرها من الأدمن) -->
+  <div id="doorAlertsBox" style="display:none; margin-bottom:16px;"></div>
+
   <div class="card" style="margin-bottom:16px;">
     <div style="margin-bottom:12px;">
       <label style="display:block; margin-bottom:6px; font-weight:700;">1. اختر رقم الطاولة</label>
@@ -100,7 +103,14 @@
   </div>
 
   <div class="card">
-    <h3 style="margin:0 0 12px; font-size:16px; color:#d4af37;">الطاولات المفعّلة لليلة الحالية</h3>
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+      <h3 style="margin:0; font-size:16px; color:#d4af37;">الطاولات المفعّلة لليلة الحالية</h3>
+      <button class="btn btn-success" style="padding:8px 12px; font-size:12px;" onclick="downloadSoldTablesPDF()">📄 تحميل تقرير PDF للمبيعات</button>
+    </div>
+    <div id="soldSummaryBar" style="background:#0d0d11; border:1px solid #27272f; border-radius:10px; padding:8px 12px; margin-bottom:10px; font-size:13px; display:flex; justify-content:space-between; align-items:center;">
+      <span>عدد الطاولات المفعّلة: <strong id="soldCountLabel" class="gold">0</strong></span>
+      <span>إجمالي المبيعات: <strong id="soldTotalLabel" style="color:#4ade80;">0 AED</strong></span>
+    </div>
     <div id="activeList" style="display:flex; flex-direction:column; gap:8px;"></div>
   </div>
 </div>
@@ -207,7 +217,8 @@
     sections: JSON.parse(JSON.stringify(ROSTER_SECTIONS)),
     tables: {},
     requests: {},
-    greetings: {}
+    greetings: {},
+    doorAlerts: {}
   };
 
   try {
@@ -218,6 +229,7 @@
     if (cached.tables) window.PhantomState.tables = cached.tables;
     if (cached.requests) window.PhantomState.requests = cached.requests;
     if (cached.greetings) window.PhantomState.greetings = cached.greetings;
+    if (cached.doorAlerts) window.PhantomState.doorAlerts = cached.doorAlerts;
   } catch(e) {}
 
   function saveLocal(broadcast = true) {
@@ -231,8 +243,8 @@
   function fbPatchItem(col, key, patch) { fbRoomRef.child(col).child(String(key)).update(patch); }
 
   bc.onmessage = (ev) => {
-    if (ev.data && ev.data.type === 'SYNC') {
-      window.PhantomState = ev.data.state;
+    if (ev.data && (ev.data.type === 'SYNC' || ev.data.type === 'HARD_RESET')) {
+      if (ev.data.state) window.PhantomState = ev.data.state;
       if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
     }
   };
@@ -257,6 +269,7 @@
     window.PhantomState.tables = remote.tables || {};
     window.PhantomState.requests = remote.requests || {};
     window.PhantomState.greetings = remote.greetings || {};
+    window.PhantomState.doorAlerts = remote.doorAlerts || {};
     saveLocal(false);
     if (typeof window.onPhantomUpdate === 'function') window.onPhantomUpdate();
   });
@@ -425,6 +438,8 @@
       table: rawTable,
       text,
       waiterId: 'DOOR',
+      senderRole: 'door',
+      senderLabel: 'صفحة الباب • Door',
       status: 'approved',
       createdAt: Date.now(),
       timeStr: window.PhantomAPI.getUAETimeString()
@@ -453,6 +468,182 @@
     }
   }
 
+  // توليد ملف PDF حقيقي متوافق مع العربية والجدول وقابل للتحميل على الهاتف والكمبيوتر
+  function buildArabicPDFBlob(rows, totalAmount, nightKey, timeStr) {
+    const escapeXml = (s) => String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+    const tableRowsHtml = rows.map((r, idx) => `
+      <tr>
+        <td style="padding:8px; border:1px solid #ccc; text-align:center;">${idx + 1}</td>
+        <td style="padding:8px; border:1px solid #ccc; text-align:center; font-weight:bold;">#${escapeXml(r.table)}</td>
+        <td style="padding:8px; border:1px solid #ccc; text-align:center;">${escapeXml(r.section)}</td>
+        <td style="padding:8px; border:1px solid #ccc; text-align:center;">${escapeXml(r.waiter)}</td>
+        <td style="padding:8px; border:1px solid #ccc; text-align:center; font-weight:bold;">${Number(r.price).toLocaleString('en-US')} AED</td>
+      </tr>
+    `).join('');
+
+    const htmlReport = `
+      <div id="pdfExportRoot" dir="rtl" style="font-family:'Cairo',Arial,sans-serif; background:#ffffff; color:#111111; padding:24px; width:760px;">
+        <div style="text-align:center; border-bottom:2px solid #b38b22; padding-bottom:12px; margin-bottom:16px;">
+          <h1 style="margin:0; color:#111111; font-size:24px;">PHANTOM CLUB — تقرير الطاولات المباعة</h1>
+          <div style="font-size:13px; color:#444; margin-top:6px;">
+            الليلة: <strong>${escapeXml(nightKey)}</strong> | وقت التصدير: <strong>${escapeXml(timeStr)}</strong>
+          </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:16px;">
+          <thead>
+            <tr style="background:#f4efe0; color:#111111;">
+              <th style="padding:10px; border:1px solid #b38b22;">#</th>
+              <th style="padding:10px; border:1px solid #b38b22;">رقم الطاولة</th>
+              <th style="padding:10px; border:1px solid #b38b22;">السكشن</th>
+              <th style="padding:10px; border:1px solid #b38b22;">الويتر</th>
+              <th style="padding:10px; border:1px solid #b38b22;">سعر الطاولة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml || `<tr><td colspan="5" style="padding:14px; border:1px solid #ccc; text-align:center;">لا توجد طاولات مسجلة</td></tr>`}
+          </tbody>
+        </table>
+
+        <div style="background:#141418; color:#d4af37; padding:14px 18px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:17px; font-weight:bold;">
+          <span>عدد الطاولات: ${rows.length}</span>
+          <span>المجموع الكلي (Total): ${Number(totalAmount).toLocaleString('en-US')} AED</span>
+        </div>
+      </div>
+    `;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-99999px';
+    wrapper.style.top = '0';
+    wrapper.innerHTML = htmlReport;
+    document.body.appendChild(wrapper);
+
+    return new Promise((resolve, reject) => {
+      const runCanvasExport = async () => {
+        try {
+          if (!window.html2canvas) {
+            await new Promise((res, rej) => {
+              const s = document.createElement('script');
+              s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+              s.onload = res;
+              s.onerror = rej;
+              document.head.appendChild(s);
+            });
+          }
+          const target = wrapper.querySelector('#pdfExportRoot');
+          const canvas = await window.html2canvas(target, { scale: 2, backgroundColor: '#ffffff' });
+          const imgData = canvas.toDataURL('image/jpeg', 0.92);
+          const imgBytes = Uint8Array.from(atob(imgData.split(',')[1]), c => c.charCodeAt(0));
+
+          const pdfW = 595.28;
+          const pdfH = 841.89;
+          const margin = 24;
+          const usableW = pdfW - margin * 2;
+          const ratio = canvas.height / canvas.width;
+          const imgH = Math.min(usableW * ratio, pdfH - margin * 2);
+          const imgY = pdfH - margin - imgH;
+
+          // بناء ملف PDF قياسي يحتوي على صورة الجدول عالية الدقة
+          const encoder = new TextEncoder();
+          const chunks = [];
+          const offsets = [0];
+          let byteLen = 0;
+
+          const pushStr = (str) => {
+            const b = encoder.encode(str);
+            chunks.push(b);
+            byteLen += b.length;
+          };
+          const pushBytes = (b) => {
+            chunks.push(b);
+            byteLen += b.length;
+          };
+
+          pushStr('%PDF-1.4\n');
+
+          const addObj = (objNum, bodyParts) => {
+            offsets[objNum] = byteLen;
+            pushStr(`${objNum} 0 obj\n`);
+            bodyParts.forEach(p => typeof p === 'string' ? pushStr(p) : pushBytes(p));
+            pushStr('\nendobj\n');
+          };
+
+          addObj(1, ['<< /Type /Catalog /Pages 2 0 R >>']);
+          addObj(2, ['<< /Type /Pages /Kids [3 0 R] /Count 1 >>']);
+          addObj(3, [`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pdfW.toFixed(2)} ${pdfH.toFixed(2)}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`]);
+          addObj(4, [
+            `<< /Type /XObject /Subtype /Image /Width ${canvas.width} /Height ${canvas.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imgBytes.length} >>\nstream\n`,
+            imgBytes,
+            '\nendstream'
+          ]);
+          const contentStream = `q ${usableW.toFixed(2)} 0 0 ${imgH.toFixed(2)} ${margin.toFixed(2)} ${imgY.toFixed(2)} cm /Im0 Do Q\n`;
+          addObj(5, [`<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream`]);
+
+          const xrefStart = byteLen;
+          pushStr(`xref\n0 6\n0000000000 65535 f \n`);
+          for (let i = 1; i <= 5; i++) {
+            pushStr(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+          }
+          pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`);
+
+          document.body.removeChild(wrapper);
+          resolve(new Blob(chunks, { type: 'application/pdf' }));
+        } catch (err) {
+          if (wrapper.parentNode) document.body.removeChild(wrapper);
+          reject(err);
+        }
+      };
+      runCanvasExport();
+    });
+  }
+
+  async function downloadSoldTablesPDF() {
+    const activeTables = Object.values(window.PhantomState.tables || {})
+      .filter(t => window.PhantomAPI.isCodeValid(t))
+      .sort((a,b) => Number(a.table) - Number(b.table));
+
+    if (activeTables.length === 0) {
+      return alert('لا توجد طاولات مفعّلة لليلة الحالية لتصدير تقرير PDF.');
+    }
+
+    let total = 0;
+    const rows = activeTables.map(t => {
+      const price = Number(t.tablePrice) > 0 ? Number(t.tablePrice) : 0;
+      total += price;
+      const sec = window.PhantomAPI.getSectionForTable(Number(t.table));
+      const wName = (window.PhantomState.waiters[t.waiterId] || {}).name || t.waiterId || '---';
+      return {
+        table: t.table,
+        section: sec ? sec.name : '---',
+        waiter: wName,
+        price
+      };
+    });
+
+    const nightKey = getCurrentNightKey();
+    const timeStr = window.PhantomAPI.getUAETimeString();
+
+    try {
+      const blob = await buildArabicPDFBlob(rows, total, nightKey, timeStr);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Phantom-Sold-Tables-${nightKey}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    } catch (e) {
+      alert('تعذر توليد ملف PDF الآن، حاول مرة أخرى.');
+    }
+  }
+
   window.onPhantomUpdate = function() {
     if (sessionStorage.getItem('phantom_door_unlocked') !== '1') {
       document.getElementById('doorLoginBox').style.display = 'block';
@@ -461,6 +652,22 @@
     }
     document.getElementById('doorLoginBox').style.display = 'none';
     document.getElementById('doorMainApp').style.display = 'block';
+
+    // عرض أو إخفاء تنبيهات الباب (تُمسح عند تصفير الباب من الأدمن)
+    const doorAlertsBox = document.getElementById('doorAlertsBox');
+    const alertsArr = Object.values(window.PhantomState.doorAlerts || {});
+    if (alertsArr.length > 0) {
+      doorAlertsBox.style.display = 'block';
+      doorAlertsBox.innerHTML = alertsArr.map(al => `
+        <div class="card" style="border-color:#ef4444; background:#1f1215; margin-bottom:8px;">
+          <div style="font-weight:900; color:#f87171;">⚠️ ${al.message || 'تنبيه الباب'}</div>
+          <div style="font-size:12px; color:#a1a1aa; margin-top:4px;">${al.timeStr || ''}</div>
+        </div>
+      `).join('');
+    } else {
+      doorAlertsBox.style.display = 'none';
+      doorAlertsBox.innerHTML = '';
+    }
 
     populateTables();
     const wSel = document.getElementById('waiterSelect');
@@ -476,6 +683,16 @@
     const actives = Object.values(window.PhantomState.tables)
       .filter(t => window.PhantomAPI.isCodeValid(t))
       .sort((a,b) => Number(a.table) - Number(b.table));
+
+    let soldTotal = 0;
+    actives.forEach(t => {
+      soldTotal += (Number(t.tablePrice) > 0 ? Number(t.tablePrice) : 0);
+    });
+    const countEl = document.getElementById('soldCountLabel');
+    const totalEl = document.getElementById('soldTotalLabel');
+    if (countEl) countEl.innerText = String(actives.length);
+    if (totalEl) totalEl.innerText = `${soldTotal.toLocaleString('en-US')} AED`;
+
     if (actives.length === 0) {
       list.innerHTML = '<div style="color:#71717a; text-align:center;">لا توجد طاولات مفعّلة سارية لليلة الحالية</div>';
     }
