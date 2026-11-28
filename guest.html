@@ -125,6 +125,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   const PHANTOM_ROOM = 'phantom_club_abudhabi_live_v3_roster12_2026';
+  const GUEST_SESSION_KEY = 'phantom_guest_session_persistent_v1';
   const FIREBASE_CONFIG = {
     databaseURL: 'https://phantom-e79ca-default-rtdb.firebaseio.com'
   };
@@ -136,17 +137,57 @@
   const fbRoomRef = fbDb.ref('phantom_club_state');
   const bc = new BroadcastChannel(PHANTOM_ROOM);
 
+  function readSavedGuestSession() {
+    try {
+      const fromLocal = localStorage.getItem(GUEST_SESSION_KEY);
+      if (fromLocal) return JSON.parse(fromLocal);
+    } catch(e) {}
+    try {
+      const fromSession = sessionStorage.getItem('phantom_guest_session');
+      if (fromSession) return JSON.parse(fromSession);
+    } catch(e) {}
+    return null;
+  }
+
+  function writeSavedGuestSession(sessObj) {
+    try {
+      if (sessObj) {
+        const raw = JSON.stringify(sessObj);
+        localStorage.setItem(GUEST_SESSION_KEY, raw);
+        sessionStorage.setItem('phantom_guest_session', raw);
+      } else {
+        localStorage.removeItem(GUEST_SESSION_KEY);
+        sessionStorage.removeItem('phantom_guest_session');
+      }
+    } catch(e) {}
+  }
+
   function getUAEDateObj() {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     return new Date(utc + (3600000 * 4));
   }
 
+  function getCloseCutoffMinutes() {
+    const s = (window.PhantomState && window.PhantomState.settings) || {};
+    const h = Number.isFinite(Number(s.closeHour)) ? Number(s.closeHour) : 3;
+    const m = Number.isFinite(Number(s.closeMin)) ? Number(s.closeMin) : 20;
+    return (h * 60) + m;
+  }
+
+  function getOpenStartMinutes() {
+    const s = (window.PhantomState && window.PhantomState.settings) || {};
+    const h = Number.isFinite(Number(s.openHour)) ? Number(s.openHour) : 23;
+    const m = Number.isFinite(Number(s.openMin)) ? Number(s.openMin) : 30;
+    return (h * 60) + m;
+  }
+
   function getCurrentNightKey() {
     const uae = getUAEDateObj();
     const mins = uae.getHours() * 60 + uae.getMinutes();
+    const cutoffMins = getCloseCutoffMinutes();
     const shift = new Date(uae.getTime());
-    if (mins < 210) shift.setDate(shift.getDate() - 1);
+    if (mins < cutoffMins) shift.setDate(shift.getDate() - 1);
     const y = shift.getFullYear();
     const m = String(shift.getMonth() + 1).padStart(2, '0');
     const d = String(shift.getDate()).padStart(2, '0');
@@ -155,21 +196,21 @@
 
   function isTableCodeExpired(tObj) {
     if (!tObj || tObj.status !== 'active' || !tObj.code) return true;
+
+    const nowTs = Date.now();
+    if (tObj.createdAt && (nowTs - Number(tObj.createdAt)) < (12 * 60 * 60 * 1000)) {
+      return false;
+    }
+
     const currentNight = getCurrentNightKey();
     if (tObj.nightKey && tObj.nightKey !== currentNight) return true;
+
     const uae = getUAEDateObj();
     const mins = uae.getHours() * 60 + uae.getMinutes();
-    const cutoffMins = 3 * 60 + 20;
-    const openMins = 23 * 60 + 30;
+    const cutoffMins = getCloseCutoffMinutes();
+    const openMins = getOpenStartMinutes();
+
     if (mins >= cutoffMins && mins < openMins) return true;
-    if (tObj.createdAt) {
-      const createdUae = new Date(tObj.createdAt + (3600000 * 4));
-      const cMins = createdUae.getHours() * 60 + createdUae.getMinutes();
-      const cNight = tObj.nightKey || '';
-      if (cNight === currentNight && cMins >= openMins && mins >= cutoffMins && mins < openMins) {
-        return true;
-      }
-    }
     return false;
   }
 
@@ -290,7 +331,7 @@
 </script>
 
 <script>
-  let session = JSON.parse(sessionStorage.getItem('phantom_guest_session') || 'null');
+  let session = readSavedGuestSession();
 
   function showToast(msg) {
     const t = document.getElementById('toastMsg');
@@ -310,9 +351,9 @@
       return alert('انتهت صلاحية هذا الكود بعد انتهاء الليلة السابقة، يلزم تفعيل الطاولة وتوليد كود جديد لليوم.\nThis code has expired after last night\'s session. A new code is required for tonight.');
     }
 
-    const alreadyNotified = sessionStorage.getItem(`phantom_table_activated_notified_${table}_${code}`);
+    const alreadyNotified = localStorage.getItem(`phantom_table_activated_notified_${table}_${code}`);
     if (!alreadyNotified) {
-      sessionStorage.setItem(`phantom_table_activated_notified_${table}_${code}`, '1');
+      localStorage.setItem(`phantom_table_activated_notified_${table}_${code}`, '1');
       window.PhantomAPI.addRequest({
         id: 'ACT_' + Date.now() + '_' + table,
         table: String(table),
@@ -325,24 +366,37 @@
       });
     }
 
-    session = { table, code };
-    sessionStorage.setItem('phantom_guest_session', JSON.stringify(session));
+    session = { table: String(table), code: String(code) };
+    writeSavedGuestSession(session);
     renderGuestView();
   }
 
   function logoutGuest() {
     session = null;
-    sessionStorage.removeItem('phantom_guest_session');
+    writeSavedGuestSession(null);
     renderGuestView();
   }
 
   function getActiveTableObj() {
-    if (!session) return null;
-    const tObj = window.PhantomState.tables[session.table];
-    if (!tObj || tObj.status !== 'active' || String(tObj.code || '').trim() !== session.code || isTableCodeExpired(tObj)) {
+    if (!session || !session.table || !session.code) return null;
+    const tObj = (window.PhantomState.tables || {})[String(session.table)];
+
+    // إذا لم تصل بيانات الطاولة بعد من Firebase ولكن يوجد كود محفوظ في الجلسة المحلية نُبقي الجلسة لحين وصول التحديث
+    if (!tObj) {
+      return {
+        table: String(session.table),
+        code: String(session.code),
+        status: 'active',
+        _pendingRemote: true
+      };
+    }
+
+    // إذا أغلقت الطاولة نهائياً أو تغير الكود أو انتهت صلاحيته
+    if (tObj.status === 'closed' || !tObj.code || String(tObj.code).trim() !== String(session.code).trim() || isTableCodeExpired(tObj)) {
       logoutGuest();
       return null;
     }
+
     return tObj;
   }
 
@@ -389,14 +443,13 @@
   }
 
   function renderGuestView() {
+    if (!session) session = readSavedGuestSession();
     const isOpen = window.PhantomAPI.isClubOpen();
     const closedEl = document.getElementById('closedScreen');
     const authEl = document.getElementById('authScreen');
     const servEl = document.getElementById('serviceScreen');
 
     if (!isOpen) {
-      session = null;
-      sessionStorage.removeItem('phantom_guest_session');
       closedEl.style.display = 'block';
       authEl.style.display = 'none';
       servEl.style.display = 'none';
@@ -413,7 +466,7 @@
       servEl.style.display = 'block';
       document.getElementById('activeTableNum').innerText = tObj.table;
       const effW = window.PhantomAPI.getEffectiveWaiterId(tObj.table);
-      const wName = (window.PhantomState.waiters[effW] || {}).name || effW;
+      const wName = (window.PhantomState.waiters[effW] || {}).name || effW || '---';
       document.getElementById('activeWaiterName').innerText = wName;
 
       const noticesEl = document.getElementById('guestNoticesBox');
@@ -433,6 +486,12 @@
       }
     }
   }
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) renderGuestView();
+  });
+  window.addEventListener('pageshow', renderGuestView);
+  window.addEventListener('focus', renderGuestView);
 
   window.onPhantomUpdate = renderGuestView;
   setInterval(() => {
